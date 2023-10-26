@@ -160,6 +160,19 @@ TEST_F(optional_test, nullopt_assignment) {
   instances_guard.expect_no_instances();
 }
 
+TEST_F(optional_test, empty_ctor) {
+  optional<test_object> a = {};
+  EXPECT_FALSE(static_cast<bool>(a));
+  instances_guard.expect_no_instances();
+}
+
+TEST_F(optional_test, empty_assignment) {
+  std::optional<test_object> a(42);
+  a = {};
+  EXPECT_FALSE(static_cast<bool>(a));
+  instances_guard.expect_no_instances();
+}
+
 struct mytype {
   mytype(int, int, int, std::unique_ptr<int>) {}
 };
