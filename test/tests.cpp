@@ -1,6 +1,6 @@
 #include "optional.h"
-#include "test_classes.h"
-#include "test_object.h"
+#include "test-classes.h"
+#include "test-object.h"
 
 #include <gtest/gtest.h>
 
@@ -9,10 +9,6 @@
 #include <vector>
 
 namespace {
-struct no_default_ctor : test_object {
-  using test_object::test_object;
-  no_default_ctor() = delete;
-};
 
 struct only_movable : test_object {
   using test_object::test_object;
@@ -26,167 +22,161 @@ struct only_movable : test_object {
     return *this;
   }
 };
+
+class optional_test : public ::testing::Test {
+protected:
+  test_object::no_new_instances_guard instances_guard;
+};
+
 } // namespace
 
-TEST(optional_testing, default_ctor) {
-  optional<no_default_ctor> a;
-  EXPECT_FALSE(static_cast<bool>(a));
-}
-
-TEST(optional_testing, default_ctor_2) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, default_ctor) {
   optional<test_object> a;
   EXPECT_FALSE(static_cast<bool>(a));
-  g.expect_no_instances();
 }
 
-TEST(optional_testing, deref_access) {
+TEST_F(optional_test, default_ctor_no_instances) {
+  optional<test_object> a;
+  EXPECT_FALSE(static_cast<bool>(a));
+  instances_guard.expect_no_instances();
+}
+
+TEST_F(optional_test, deref_access) {
   optional<test_object> a(42);
   EXPECT_EQ(42, a->operator int());
   EXPECT_EQ(42, std::as_const(a)->operator int());
 }
 
-TEST(optional_testing, value_ctor) {
+TEST_F(optional_test, value_ctor) {
   optional<int> a(42);
   EXPECT_TRUE(static_cast<bool>(a));
   EXPECT_EQ(42, *a);
   EXPECT_EQ(42, *std::as_const(a));
 }
 
-TEST(optional_testing, reset) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, reset) {
   optional<test_object> a(42);
   EXPECT_TRUE(static_cast<bool>(a));
   a.reset();
   EXPECT_FALSE(static_cast<bool>(a));
-  g.expect_no_instances();
+  instances_guard.expect_no_instances();
 }
 
-TEST(optional_testing, dtor) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, dtor) {
   optional<test_object> a(42);
   EXPECT_TRUE(static_cast<bool>(a));
   EXPECT_EQ(42, *a);
 }
 
-TEST(optional_testing, copy_ctor) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, copy_ctor) {
   optional<test_object> a(42);
   optional<test_object> b = a;
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
-TEST(optional_testing, copy_ctor_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, copy_ctor_empty) {
   optional<test_object> a;
   optional<test_object> b = a;
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
-TEST(optional_testing, move_ctor) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, move_ctor) {
   optional<only_movable> a(42);
   optional<only_movable> b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
-TEST(optional_testing, move_ctor_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, move_ctor_empty) {
   optional<test_object> a;
   optional<test_object> b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
-TEST(optional_testing, assignment_empty_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, copy_assignment_empty_empty) {
   optional<test_object> a, b;
   b = a;
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
-TEST(optional_testing, assignment_to_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, copy_assignment_to_empty) {
   optional<test_object> a(42), b;
   b = a;
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
-TEST(optional_testing, assignment_from_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, copy_assignment_from_empty) {
   optional<test_object> a, b(42);
   b = a;
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
-TEST(optional_testing, assignment) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, copy_assignment) {
   optional<test_object> a(42), b(41);
   b = a;
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
-TEST(optional_testing, move_assignment_empty_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, move_assignment_empty_empty) {
   optional<only_movable> a, b;
   b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
-TEST(optional_testing, move_assignment_to_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, move_assignment_to_empty) {
   optional<only_movable> a(42), b;
   b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
-TEST(optional_testing, move_assignment_from_empty) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, move_assignment_from_empty) {
   optional<only_movable> a, b(42);
   b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
-TEST(optional_testing, move_assignment) {
-  test_object::no_new_instances_guard g;
+TEST_F(optional_test, move_assignment) {
   optional<only_movable> a(42), b(41);
   b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
-TEST(optional_testing, nullopt_ctor) {
+TEST_F(optional_test, nullopt_ctor) {
   optional<test_object> a = nullopt;
   EXPECT_FALSE(static_cast<bool>(a));
+  instances_guard.expect_no_instances();
 }
 
-TEST(optional_testing, nullopt_assignment) {
+TEST_F(optional_test, nullopt_assignment) {
   optional<test_object> a(42);
   a = nullopt;
   EXPECT_FALSE(static_cast<bool>(a));
   EXPECT_TRUE(noexcept(a = nullopt));
+  instances_guard.expect_no_instances();
 }
 
 struct mytype {
   mytype(int, int, int, std::unique_ptr<int>) {}
 };
 
-TEST(optional_testing, in_place_ctor) {
+TEST_F(optional_test, in_place_ctor) {
   optional<mytype> a(in_place, 1, 2, 3, std::unique_ptr<int>());
   EXPECT_TRUE(static_cast<bool>(a));
 }
 
-TEST(optional_testing, emplace) {
+TEST_F(optional_test, emplace) {
   optional<mytype> a;
   a.emplace(1, 2, 3, std::unique_ptr<int>());
   EXPECT_TRUE(static_cast<bool>(a));
 }
 
 namespace {
+
 struct throw_in_ctor {
   struct exception : std::exception {
     using std::exception::exception;
@@ -200,16 +190,17 @@ struct throw_in_ctor {
 
   inline static bool enable_throw = false;
 };
+
 } // namespace
 
-TEST(optional_testing, emplace_throw) {
+TEST_F(optional_test, emplace_throw) {
   optional<throw_in_ctor> a(in_place, 1, 2);
   throw_in_ctor::enable_throw = true;
   EXPECT_THROW(a.emplace(3, 4), throw_in_ctor::exception);
   EXPECT_FALSE(static_cast<bool>(a));
 }
 
-TEST(optional_testing, comparison_non_empty_and_non_empty) {
+TEST_F(optional_test, comparison_non_empty_and_non_empty) {
   optional<int> a(41), b(42);
   EXPECT_FALSE(a == b);
   EXPECT_TRUE(a != b);
@@ -233,7 +224,7 @@ TEST(optional_testing, comparison_non_empty_and_non_empty) {
   EXPECT_TRUE(b >= a);
 }
 
-TEST(optional_testing, comparison_non_empty_and_empty) {
+TEST_F(optional_test, comparison_non_empty_and_empty) {
   optional<int> a(41), b;
   EXPECT_FALSE(a == b);
   EXPECT_TRUE(a != b);
@@ -250,7 +241,7 @@ TEST(optional_testing, comparison_non_empty_and_empty) {
   EXPECT_FALSE(b >= a);
 }
 
-TEST(optional_testing, comparison_empty_and_empty) {
+TEST_F(optional_test, comparison_empty_and_empty) {
   optional<int> a, b;
   EXPECT_TRUE(a == b);
   EXPECT_FALSE(a != b);
@@ -275,6 +266,7 @@ TEST(optional_testing, comparison_empty_and_empty) {
 }
 
 namespace {
+
 struct cvalue {
   constexpr cvalue() : value(0) {}
 
@@ -294,24 +286,26 @@ struct cvalue {
 private:
   int value;
 };
+
 } // namespace
 
-TEST(traits, destructor) {
+TEST(traits_test, destructor) {
   using optional1 = optional<int>;
   using optional2 = optional<std::string>;
   ASSERT_TRUE(std::is_trivially_destructible_v<optional1>);
   ASSERT_FALSE(std::is_trivially_destructible_v<optional2>);
 }
 
-TEST(traits, default_constructor) {
+TEST(traits_test, default_constructor) {
   using optional1 = optional<std::vector<int>>;
   using optional2 = optional<no_default_t>;
   using optional3 = optional<throwing_default_t>;
   ASSERT_TRUE(std::is_default_constructible_v<optional1>);
   ASSERT_TRUE(std::is_default_constructible_v<optional2>);
+  ASSERT_TRUE(std::is_default_constructible_v<optional3>);
 }
 
-TEST(traits, copy_constructor) {
+TEST(traits_test, copy_constructor) {
   using optional1 = optional<no_copy_t>;
   using optional2 = optional<std::vector<std::string>>;
   using optional3 = optional<dummy_t>;
@@ -323,7 +317,7 @@ TEST(traits, copy_constructor) {
   ASSERT_FALSE(std::is_trivially_copy_constructible_v<optional4>);
 }
 
-TEST(traits, move_constructor) {
+TEST(traits_test, move_constructor) {
   using optional1 = optional<no_move_t>;
   using optional2 = optional<std::string>;
   using optional3 = optional<dummy_t>;
@@ -336,7 +330,7 @@ TEST(traits, move_constructor) {
   ASSERT_TRUE(std::is_move_constructible_v<optional4>);
 }
 
-TEST(traits, copy_assignment) {
+TEST(traits_test, copy_assignment) {
   using optional1 = optional<no_copy_t>;
   using optional2 = optional<no_copy_assignment_t>;
   using optional3 = optional<non_trivial_copy_assignment_t>;
@@ -354,7 +348,7 @@ TEST(traits, copy_assignment) {
   ASSERT_FALSE(std::is_copy_assignable_v<optional6>);
 }
 
-TEST(traits, move_assignment) {
+TEST(traits_test, move_assignment) {
   using optional1 = optional<no_move_t>;
   using optional2 = optional<no_move_assignment_t>;
   using optional3 = optional<std::vector<double>>;

@@ -1,11 +1,13 @@
-#include "test_object.h"
+#include "test-object.h"
 
 #include <gtest/gtest.h>
 
 namespace {
+
 int transcode(int data, const void* ptr) {
   return data ^ static_cast<int>(reinterpret_cast<std::ptrdiff_t>(ptr) / sizeof(test_object));
 }
+
 } // namespace
 
 test_object::test_object(int data) : data(transcode(data, this)) {

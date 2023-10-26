@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 struct dummy_t {};
 
@@ -55,7 +55,7 @@ struct non_trivial_copy_assignment_t {
       x = other.x + 5;
     }
     return *this;
-  };
+  }
 
   int x;
 };
