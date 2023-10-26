@@ -17,9 +17,11 @@ struct throwing_default_t {
 struct throwing_move_operator_t {
   static size_t swap_called;
   throwing_move_operator_t() = default;
+
   throwing_move_operator_t(throwing_move_operator_t&&) noexcept(false) {
     throw std::exception();
   }
+
   throwing_move_operator_t& operator=(throwing_move_operator_t&&) = default;
 };
 
@@ -39,16 +41,16 @@ struct no_move_t {
 
 struct non_trivial_copy_t {
   explicit non_trivial_copy_t(int x) noexcept : x{x} {}
-  non_trivial_copy_t(const non_trivial_copy_t& other) noexcept
-      : x{other.x + 1} {}
+
+  non_trivial_copy_t(const non_trivial_copy_t& other) noexcept : x{other.x + 1} {}
 
   int x;
 };
 
 struct non_trivial_copy_assignment_t {
   explicit non_trivial_copy_assignment_t(int x) noexcept : x{x} {}
-  non_trivial_copy_assignment_t&
-  operator=(const non_trivial_copy_assignment_t& other) {
+
+  non_trivial_copy_assignment_t& operator=(const non_trivial_copy_assignment_t& other) {
     if (this != &other) {
       x = other.x + 5;
     }

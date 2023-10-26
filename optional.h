@@ -10,10 +10,10 @@ public:
   constexpr optional() noexcept;
   constexpr optional(nullopt_t) noexcept;
 
-  constexpr optional(optional const&);
+  constexpr optional(const optional&);
   constexpr optional(optional&&);
 
-  optional& operator=(optional const&);
+  optional& operator=(const optional&);
   optional& operator=(optional&&);
 
   constexpr optional(T value);
@@ -26,10 +26,10 @@ public:
   constexpr explicit operator bool() const noexcept;
 
   constexpr T& operator*() noexcept;
-  constexpr T const& operator*() const noexcept;
+  constexpr const T& operator*() const noexcept;
 
   constexpr T* operator->() noexcept;
-  constexpr T const* operator->() const noexcept;
+  constexpr const T* operator->() const noexcept;
 
   template <typename... Args>
   void emplace(Args&&... args);
@@ -38,19 +38,19 @@ public:
 };
 
 template <typename T>
-constexpr bool operator==(optional<T> const& a, optional<T> const& b);
+constexpr bool operator==(const optional<T>& a, const optional<T>& b);
 
 template <typename T>
-constexpr bool operator!=(optional<T> const& a, optional<T> const& b);
+constexpr bool operator!=(const optional<T>& a, const optional<T>& b);
 
 template <typename T>
-constexpr bool operator<(optional<T> const& a, optional<T> const& b);
+constexpr bool operator<(const optional<T>& a, const optional<T>& b);
 
 template <typename T>
-constexpr bool operator<=(optional<T> const& a, optional<T> const& b);
+constexpr bool operator<=(const optional<T>& a, const optional<T>& b);
 
 template <typename T>
-constexpr bool operator>(optional<T> const& a, optional<T> const& b);
+constexpr bool operator>(const optional<T>& a, const optional<T>& b);
 
 template <typename T>
-constexpr bool operator>=(optional<T> const& a, optional<T> const& b);
+constexpr bool operator>=(const optional<T>& a, const optional<T>& b);

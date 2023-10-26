@@ -1,7 +1,8 @@
+#include "gtest/gtest.h"
 #include "optional.h"
 #include "test_classes.h"
 #include "test_object.h"
-#include "gtest/gtest.h"
+
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -14,8 +15,8 @@ struct no_default_ctor : test_object {
 
 struct only_movable : test_object {
   using test_object::test_object;
-  only_movable(only_movable const&) = delete;
-  only_movable& operator=(only_movable const&) = delete;
+  only_movable(const only_movable&) = delete;
+  only_movable& operator=(const only_movable&) = delete;
 
   only_movable(only_movable&& other) noexcept : test_object(std::move(other)) {}
 
@@ -183,6 +184,7 @@ TEST(optional_testing, emplace) {
   a.emplace(1, 2, 3, std::unique_ptr<int>());
   EXPECT_TRUE(static_cast<bool>(a));
 }
+
 namespace {
 struct throw_in_ctor {
   struct exception : std::exception {
@@ -190,11 +192,12 @@ struct throw_in_ctor {
   };
 
   throw_in_ctor(int, int) {
-    if (enable_throw)
+    if (enable_throw) {
       throw exception();
+    }
   }
 
-  static inline bool enable_throw = false;
+  inline static bool enable_throw = false;
 };
 } // namespace
 
@@ -269,15 +272,16 @@ TEST(optional_testing, comparison_empty_and_empty) {
   EXPECT_FALSE(b > a);
   EXPECT_TRUE(b >= a);
 }
+
 namespace {
 struct cvalue {
   constexpr cvalue() : value(0) {}
 
   constexpr cvalue(int value) : value(value) {}
 
-  constexpr cvalue(cvalue const& other) : value(other.value) {}
+  constexpr cvalue(const cvalue& other) : value(other.value) {}
 
-  constexpr cvalue& operator=(cvalue const& other) {
+  constexpr cvalue& operator=(const cvalue& other) {
     value = other.value + 1;
     return *this;
   }

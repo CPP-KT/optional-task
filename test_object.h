@@ -7,10 +7,10 @@ struct test_object {
 
   test_object() = delete;
   test_object(int data);
-  test_object(test_object const& other);
+  test_object(const test_object& other);
   ~test_object();
 
-  test_object& operator=(test_object const& c);
+  test_object& operator=(const test_object& c);
   operator int() const;
 
 private:
@@ -19,19 +19,19 @@ private:
 private:
   int data;
 
-  static std::set<test_object const*> instances;
+  static std::set<const test_object*> instances;
 };
 
 struct test_object::no_new_instances_guard {
   no_new_instances_guard();
 
-  no_new_instances_guard(no_new_instances_guard const&) = delete;
-  no_new_instances_guard& operator=(no_new_instances_guard const&) = delete;
+  no_new_instances_guard(const no_new_instances_guard&) = delete;
+  no_new_instances_guard& operator=(const no_new_instances_guard&) = delete;
 
   ~no_new_instances_guard();
 
   void expect_no_instances() const;
 
 private:
-  std::set<test_object const*> old_instances;
+  std::set<const test_object*> old_instances;
 };
