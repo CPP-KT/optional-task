@@ -1,7 +1,8 @@
-#include "gtest/gtest.h"
 #include "optional.h"
 #include "test_classes.h"
 #include "test_object.h"
+
+#include <gtest/gtest.h>
 
 #include <stdexcept>
 #include <string>
