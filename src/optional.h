@@ -23,6 +23,8 @@ public:
 
   optional& operator=(nullopt_t) noexcept;
 
+  friend void swap(optional& lhs, optional& rhs);
+
   constexpr explicit operator bool() const noexcept;
 
   constexpr T& operator*() noexcept;

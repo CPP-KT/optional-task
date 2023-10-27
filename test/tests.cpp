@@ -173,17 +173,97 @@ TEST_F(optional_test, empty_assignment) {
   instances_guard.expect_no_instances();
 }
 
-struct mytype {
-  mytype(int, int, int, std::unique_ptr<int>) {}
+TEST_F(optional_test, swap_non_empty) {
+  std::optional<test_object> a(42);
+  std::optional<test_object> b(55);
+
+  swap(a, b);
+
+  EXPECT_EQ(55, *a);
+  EXPECT_EQ(42, *b);
+}
+
+TEST_F(optional_test, swap_empty_right) {
+  std::optional<test_object> a(42);
+  std::optional<test_object> b;
+
+  swap(a, b);
+
+  EXPECT_FALSE(a);
+  EXPECT_EQ(42, *b);
+}
+
+TEST_F(optional_test, swap_empty_left) {
+  std::optional<test_object> a;
+  std::optional<test_object> b(55);
+
+  swap(a, b);
+
+  EXPECT_EQ(55, *a);
+  EXPECT_FALSE(b);
+}
+
+TEST_F(optional_test, swap_empty_both) {
+  std::optional<test_object> a;
+  std::optional<test_object> b;
+
+  swap(a, b);
+
+  EXPECT_FALSE(a);
+  EXPECT_FALSE(b);
+}
+
+namespace {
+
+struct custom_swap {
+  explicit custom_swap(int value) noexcept : value(value) {}
+
+  friend void swap(custom_swap& lhs, custom_swap& rhs) noexcept {
+    std::swap(lhs.value, rhs.value);
+    ++lhs.value;
+    ++rhs.value;
+  }
+
+  int value;
 };
 
+} // namespace
+
+TEST_F(optional_test, swap_custom) {
+  std::optional<custom_swap> a(42);
+  std::optional<custom_swap> b(55);
+
+  swap(a, b);
+
+  EXPECT_EQ(56, a->value);
+  EXPECT_EQ(43, b->value);
+}
+
+TEST_F(optional_test, swap_empty_custom) {
+  std::optional<custom_swap> a(42);
+  std::optional<custom_swap> b;
+
+  swap(a, b);
+
+  EXPECT_FALSE(a);
+  EXPECT_EQ(42, b->value);
+}
+
+namespace {
+
+struct non_default_constructor {
+  non_default_constructor(int, int, int, std::unique_ptr<int>) {}
+};
+
+} // namespace
+
 TEST_F(optional_test, in_place_ctor) {
-  optional<mytype> a(in_place, 1, 2, 3, std::unique_ptr<int>());
+  optional<non_default_constructor> a(in_place, 1, 2, 3, std::unique_ptr<int>());
   EXPECT_TRUE(static_cast<bool>(a));
 }
 
 TEST_F(optional_test, emplace) {
-  optional<mytype> a;
+  optional<non_default_constructor> a;
   a.emplace(1, 2, 3, std::unique_ptr<int>());
   EXPECT_TRUE(static_cast<bool>(a));
 }
