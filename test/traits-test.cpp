@@ -28,7 +28,7 @@ struct throwing_move_operator_t {
 
   throwing_move_operator_t& operator=(throwing_move_operator_t&&) = default;
 
-  friend void swap(throwing_move_operator_t&, throwing_move_operator_t&) {
+  [[maybe_unused]] friend void swap(throwing_move_operator_t&, throwing_move_operator_t&) {
     throw std::exception();
   }
 };
@@ -196,19 +196,23 @@ struct test_variants_error {
   }
 };
 
+// workaround for clang 16+
+template <variant Dtor>
+struct test_object_destructor_base;
+
+template <>
+struct test_object_destructor_base<variant::TRIVIAL> {};
+
+template <>
+struct test_object_destructor_base<variant::USER_DEFINED> {
+  ~test_object_destructor_base() {}
+};
+
 template <variant Dtor, variant CopyCtor, variant MoveCtor, variant CopyAssign, variant MoveAssign>
 void test_variants() {
   using enum variant;
 
-  struct test_object_base {
-    ~test_object_base()
-      requires(Dtor == TRIVIAL)
-    = default;
-
-    ~test_object_base()
-      requires(Dtor == USER_DEFINED)
-    {}
-
+  struct test_object_base : test_object_destructor_base<Dtor> {
     test_object_base(const test_object_base&)
       requires(CopyCtor == TRIVIAL)
     = default;
