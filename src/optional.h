@@ -13,30 +13,32 @@ public:
   constexpr optional(const optional&);
   constexpr optional(optional&&);
 
-  optional& operator=(const optional&);
-  optional& operator=(optional&&);
+  constexpr optional& operator=(const optional&);
+  constexpr optional& operator=(optional&&);
 
   constexpr optional(T value);
 
   template <typename... Args>
   explicit constexpr optional(in_place_t, Args&&... args);
 
-  optional& operator=(nullopt_t) noexcept;
+  constexpr optional& operator=(nullopt_t) noexcept;
 
-  friend void swap(optional& lhs, optional& rhs);
+  friend constexpr void swap(optional& lhs, optional& rhs);
 
   constexpr explicit operator bool() const noexcept;
 
-  constexpr T& operator*() noexcept;
-  constexpr const T& operator*() const noexcept;
+  constexpr T& operator*() & noexcept;
+  constexpr const T& operator*() const& noexcept;
+  constexpr T&& operator*() && noexcept;
+  constexpr const T&& operator*() const&& noexcept;
 
   constexpr T* operator->() noexcept;
   constexpr const T* operator->() const noexcept;
 
   template <typename... Args>
-  void emplace(Args&&... args);
+  constexpr void emplace(Args&&... args);
 
-  void reset();
+  constexpr void reset() noexcept;
 };
 
 template <typename T>
