@@ -37,17 +37,23 @@ TEST_F(optional_test, default_ctor_no_instances) {
   instances_guard.expect_no_instances();
 }
 
-TEST_F(optional_test, deref_access) {
-  optional<test_object> a(42);
-  EXPECT_EQ(42, a->operator int());
-  EXPECT_EQ(42, std::as_const(a)->operator int());
-}
-
 TEST_F(optional_test, value_ctor) {
   optional<int> a(42);
   EXPECT_TRUE(static_cast<bool>(a));
+}
+
+TEST_F(optional_test, dereference) {
+  optional<int> a(42);
   EXPECT_EQ(42, *a);
   EXPECT_EQ(42, *std::as_const(a));
+  EXPECT_EQ(42, *std::move(a));
+  EXPECT_EQ(42, *std::move(std::as_const(a)));
+}
+
+TEST_F(optional_test, member_access) {
+  optional<test_object> a(42);
+  EXPECT_EQ(42, a->operator int());
+  EXPECT_EQ(42, std::as_const(a)->operator int());
 }
 
 TEST_F(optional_test, reset) {
