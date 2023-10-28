@@ -170,6 +170,9 @@ enum class variant {
   USER_DEFINED,
 };
 
+template <variant...>
+struct variants {};
+
 template <variant V>
 consteval std::string_view to_str() {
   if constexpr (V == variant::TRIVIAL) {
@@ -302,15 +305,15 @@ void test_variants() {
 }
 
 template <variant... Vs, typename F>
-void static_for_each(std::integer_sequence<variant, Vs...>, F f) {
+void static_for_each(variants<Vs...>, F f) {
   (f.template operator()<Vs>(), ...);
 }
 
 } // namespace
 
 TEST(traits_test, stress) {
-  using dtor_variants = std::integer_sequence<variant, variant::TRIVIAL, variant::USER_DEFINED>;
-  using all_variants = std::integer_sequence<variant, variant::TRIVIAL, variant::DELETED, variant::USER_DEFINED>;
+  using dtor_variants = variants<variant::TRIVIAL, variant::USER_DEFINED>;
+  using all_variants = variants<variant::TRIVIAL, variant::DELETED, variant::USER_DEFINED>;
 
   static_for_each(dtor_variants{}, []<variant Dtor>() {
     static_for_each(all_variants{}, []<variant CopyCtor>() {
