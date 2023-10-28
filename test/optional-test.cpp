@@ -26,6 +26,14 @@ protected:
 
 } // namespace
 
+const nullopt_t* get_nullopt_ptr() noexcept {
+  return &nullopt;
+}
+
+const in_place_t* get_in_place_ptr() noexcept {
+  return &in_place;
+}
+
 TEST_F(optional_test, default_ctor) {
   optional<test_object> a;
   EXPECT_FALSE(static_cast<bool>(a));

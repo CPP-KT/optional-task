@@ -72,6 +72,17 @@ struct no_copy_assignment_t {
 
 } // namespace
 
+const nullopt_t* get_nullopt_ptr() noexcept;
+const in_place_t* get_in_place_ptr() noexcept;
+
+TEST(traits_test, nullopt_ptr) {
+  EXPECT_EQ(&nullopt, get_nullopt_ptr());
+}
+
+TEST(traits_test, in_place_ptr) {
+  EXPECT_EQ(&in_place, get_in_place_ptr());
+}
+
 TEST(traits_test, destructor) {
   using optional1 = optional<int>;
   using optional2 = optional<std::string>;
