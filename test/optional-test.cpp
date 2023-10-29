@@ -177,15 +177,15 @@ TEST_F(optional_test, empty_ctor) {
 }
 
 TEST_F(optional_test, empty_assignment) {
-  std::optional<test_object> a(42);
+  optional<test_object> a(42);
   a = {};
   EXPECT_FALSE(static_cast<bool>(a));
   instances_guard.expect_no_instances();
 }
 
 TEST_F(optional_test, swap_non_empty) {
-  std::optional<test_object> a(42);
-  std::optional<test_object> b(55);
+  optional<test_object> a(42);
+  optional<test_object> b(55);
 
   swap(a, b);
 
@@ -194,8 +194,8 @@ TEST_F(optional_test, swap_non_empty) {
 }
 
 TEST_F(optional_test, swap_empty_right) {
-  std::optional<test_object> a(42);
-  std::optional<test_object> b;
+  optional<test_object> a(42);
+  optional<test_object> b;
 
   swap(a, b);
 
@@ -204,8 +204,8 @@ TEST_F(optional_test, swap_empty_right) {
 }
 
 TEST_F(optional_test, swap_empty_left) {
-  std::optional<test_object> a;
-  std::optional<test_object> b(55);
+  optional<test_object> a;
+  optional<test_object> b(55);
 
   swap(a, b);
 
@@ -214,8 +214,8 @@ TEST_F(optional_test, swap_empty_left) {
 }
 
 TEST_F(optional_test, swap_empty_both) {
-  std::optional<test_object> a;
-  std::optional<test_object> b;
+  optional<test_object> a;
+  optional<test_object> b;
 
   swap(a, b);
 
@@ -226,7 +226,7 @@ TEST_F(optional_test, swap_empty_both) {
 namespace {
 
 struct custom_swap {
-  explicit custom_swap(int value) noexcept : value(value) {}
+  custom_swap(int value) noexcept : value(value) {}
 
   friend void swap(custom_swap& lhs, custom_swap& rhs) noexcept {
     std::swap(lhs.value, rhs.value);
@@ -240,8 +240,8 @@ struct custom_swap {
 } // namespace
 
 TEST_F(optional_test, swap_custom) {
-  std::optional<custom_swap> a(42);
-  std::optional<custom_swap> b(55);
+  optional<custom_swap> a(42);
+  optional<custom_swap> b(55);
 
   swap(a, b);
 
@@ -250,8 +250,8 @@ TEST_F(optional_test, swap_custom) {
 }
 
 TEST_F(optional_test, swap_empty_custom) {
-  std::optional<custom_swap> a(42);
-  std::optional<custom_swap> b;
+  optional<custom_swap> a(42);
+  optional<custom_swap> b;
 
   swap(a, b);
 
