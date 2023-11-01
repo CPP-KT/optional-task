@@ -303,8 +303,62 @@ TEST_F(optional_test, emplace_throw) {
   EXPECT_FALSE(static_cast<bool>(a));
 }
 
+namespace {
+
+struct comparison_counters {
+  size_t equal = 0;
+  size_t not_equal = 0;
+  size_t less = 0;
+  size_t less_equal = 0;
+  size_t greater = 0;
+  size_t greater_equal = 0;
+};
+
+struct custom_comparison {
+  custom_comparison(int value, comparison_counters* counters) : value(value), counters(counters) {}
+
+  bool operator==(const custom_comparison& other) const {
+    ++counters->equal;
+    return this->value == other.value;
+  }
+
+  bool operator!=(const custom_comparison& other) const {
+    ++counters->not_equal;
+    return this->value != other.value;
+  }
+
+  bool operator<(const custom_comparison& other) const {
+    ++counters->less;
+    return this->value < other.value;
+  }
+
+  bool operator<=(const custom_comparison& other) const {
+    ++counters->less_equal;
+    return this->value <= other.value;
+  }
+
+  bool operator>(const custom_comparison& other) const {
+    ++counters->greater;
+    return this->value > other.value;
+  }
+
+  bool operator>=(const custom_comparison& other) const {
+    ++counters->greater_equal;
+    return this->value >= other.value;
+  }
+
+private:
+  int value;
+  comparison_counters* counters;
+};
+
+} // namespace
+
 TEST_F(optional_test, comparison_non_empty_and_non_empty) {
-  optional<int> a(41), b(42);
+  comparison_counters ca, cb;
+  optional<custom_comparison> a(in_place, 41, &ca);
+  optional<custom_comparison> b(in_place, 42, &cb);
+
   EXPECT_FALSE(a == b);
   EXPECT_TRUE(a != b);
   EXPECT_TRUE(a < b);
@@ -325,10 +379,27 @@ TEST_F(optional_test, comparison_non_empty_and_non_empty) {
   EXPECT_FALSE(b <= a);
   EXPECT_TRUE(b > a);
   EXPECT_TRUE(b >= a);
+
+  EXPECT_EQ(2, ca.equal);
+  EXPECT_EQ(2, ca.not_equal);
+  EXPECT_EQ(2, ca.less);
+  EXPECT_EQ(2, ca.less_equal);
+  EXPECT_EQ(2, ca.greater);
+  EXPECT_EQ(2, ca.greater_equal);
+
+  EXPECT_EQ(1, cb.equal);
+  EXPECT_EQ(1, cb.not_equal);
+  EXPECT_EQ(1, cb.less);
+  EXPECT_EQ(1, cb.less_equal);
+  EXPECT_EQ(1, cb.greater);
+  EXPECT_EQ(1, cb.greater_equal);
 }
 
 TEST_F(optional_test, comparison_non_empty_and_empty) {
-  optional<int> a(41), b;
+  comparison_counters ca;
+  optional<custom_comparison> a(in_place, 41, &ca);
+  optional<custom_comparison> b;
+
   EXPECT_FALSE(a == b);
   EXPECT_TRUE(a != b);
   EXPECT_FALSE(a < b);
@@ -342,10 +413,18 @@ TEST_F(optional_test, comparison_non_empty_and_empty) {
   EXPECT_TRUE(b <= a);
   EXPECT_FALSE(b > a);
   EXPECT_FALSE(b >= a);
+
+  EXPECT_EQ(0, ca.equal);
+  EXPECT_EQ(0, ca.not_equal);
+  EXPECT_EQ(0, ca.less);
+  EXPECT_EQ(0, ca.less_equal);
+  EXPECT_EQ(0, ca.greater);
+  EXPECT_EQ(0, ca.greater_equal);
 }
 
 TEST_F(optional_test, comparison_empty_and_empty) {
-  optional<int> a, b;
+  optional<custom_comparison> a, b;
+
   EXPECT_TRUE(a == b);
   EXPECT_FALSE(a != b);
   EXPECT_FALSE(a < b);
