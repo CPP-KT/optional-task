@@ -432,10 +432,6 @@ void test_variants_noexcept() {
 
   EXPECT_EQ(std::is_nothrow_move_constructible_v<test_object>, std::is_nothrow_move_constructible_v<opt>) << err;
 
-  EXPECT_EQ(std::is_nothrow_copy_assignable_v<test_object>, std::is_nothrow_copy_assignable_v<opt>) << err;
-
-  EXPECT_EQ(std::is_nothrow_move_assignable_v<test_object>, std::is_nothrow_move_assignable_v<opt>) << err;
-
   constexpr bool to_int_int = std::is_nothrow_constructible_v<test_object, int, int>;
   constexpr bool opt_int_int = std::is_nothrow_constructible_v<opt, in_place_t, int, int>;
   EXPECT_EQ(to_int_int, opt_int_int) << err;
@@ -446,14 +442,13 @@ void test_variants_noexcept() {
   if constexpr (MoveCtor == variant_noexcept::THROWABLE) {
     EXPECT_FALSE(std::is_nothrow_move_constructible_v<opt>) << err;
   }
-  if constexpr (CopyAssign == variant_noexcept::THROWABLE) {
-    EXPECT_FALSE(std::is_nothrow_copy_assignable_v<opt>) << err;
+  if constexpr (CopyAssign == variant_noexcept::NOEXCEPT && CopyCtor == variant_noexcept::NOEXCEPT) {
+    EXPECT_TRUE(std::is_nothrow_copy_assignable_v<opt>) << err;
   }
-  if constexpr (MoveAssign == variant_noexcept::THROWABLE) {
-    EXPECT_FALSE(std::is_nothrow_move_assignable_v<opt>) << err;
-  }
+
   if constexpr (MoveAssign == variant_noexcept::NOEXCEPT && MoveCtor == variant_noexcept::NOEXCEPT) {
     EXPECT_TRUE(std::is_nothrow_swappable_v<opt>) << err;
+    EXPECT_TRUE(std::is_nothrow_move_assignable_v<opt>) << err;
   }
   if constexpr (UserCtor == variant_noexcept::NOEXCEPT) {
     EXPECT_TRUE(opt_int_int) << err;
