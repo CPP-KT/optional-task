@@ -331,3 +331,157 @@ TEST(traits_test, stress) {
     });
   });
 }
+
+namespace {
+
+enum class variant_noexcept {
+  NOEXCEPT,
+  THROWABLE
+};
+
+template <variant_noexcept...>
+struct variants_noexcept {};
+
+template <variant_noexcept V>
+consteval std::string_view to_str() {
+  if constexpr (V == variant_noexcept ::NOEXCEPT) {
+    return "noexcept";
+  } else if constexpr (V == variant_noexcept ::THROWABLE) {
+    return "throwable";
+  }
+}
+
+template <variant_noexcept CopyCtor, variant_noexcept MoveCtor, variant_noexcept CopyAssign,
+          variant_noexcept MoveAssign, variant_noexcept UserCtor>
+struct test_variants_noexcept_error {
+  friend std::ostream& operator<<(std::ostream& out, test_variants_noexcept_error) {
+    out << "CopyCtor = " << to_str<CopyCtor>() << ", ";
+    out << "MoveCtor = " << to_str<MoveCtor>() << ", ";
+    out << "CopyAssign = " << to_str<CopyAssign>() << ", ";
+    out << "MoveAssign = " << to_str<MoveAssign>() << ", ";
+    out << "UserCtor = " << to_str<UserCtor>();
+    return out;
+  }
+};
+
+// workaround for clang 16+
+
+template <variant_noexcept CopyCtor, variant_noexcept MoveCtor, variant_noexcept CopyAssign,
+          variant_noexcept MoveAssign, variant_noexcept UserCtor>
+void test_variants_noexcept() {
+
+  struct test_object_base {
+    test_object_base(const test_object_base&) noexcept
+      requires(CopyCtor == variant_noexcept::NOEXCEPT)
+    {};
+
+    test_object_base(const test_object_base&)
+      requires(CopyCtor == variant_noexcept::THROWABLE)
+    {}
+
+    test_object_base(test_object_base&&) noexcept
+      requires(MoveCtor == variant_noexcept::NOEXCEPT)
+    {};
+
+    test_object_base(test_object_base&&)
+      requires(MoveCtor == variant_noexcept::THROWABLE)
+    {}
+
+    test_object_base& operator=(const test_object_base&) noexcept
+      requires(CopyAssign == variant_noexcept::NOEXCEPT)
+    {
+      return *this;
+    }
+
+    test_object_base& operator=(const test_object_base&)
+      requires(CopyAssign == variant_noexcept::THROWABLE)
+    {
+      return *this;
+    }
+
+    test_object_base& operator=(test_object_base&&) noexcept
+      requires(MoveAssign == variant_noexcept::NOEXCEPT)
+    {
+      return *this;
+    };
+
+    test_object_base& operator=(test_object_base&&)
+      requires(MoveAssign == variant_noexcept::THROWABLE)
+    {
+      return *this;
+    }
+
+    test_object_base(int a, int b) noexcept
+      requires(UserCtor == variant_noexcept::NOEXCEPT)
+    {}
+
+    test_object_base(int a, int b)
+      requires(UserCtor == variant_noexcept::THROWABLE)
+    {}
+  };
+
+  // inherit so that deleted moves still allow for calling copy ctor/assignment
+  struct test_object : test_object_base {
+    using test_object_base::test_object_base;
+  };
+
+  test_variants_noexcept_error<CopyCtor, MoveCtor, CopyAssign, MoveAssign, UserCtor> err;
+  using opt = optional<test_object>;
+
+  EXPECT_EQ(std::is_nothrow_copy_constructible_v<test_object>, std::is_nothrow_copy_constructible_v<opt>) << err;
+
+  EXPECT_EQ(std::is_nothrow_move_constructible_v<test_object>, std::is_nothrow_move_constructible_v<opt>) << err;
+
+  EXPECT_EQ(std::is_nothrow_copy_assignable_v<test_object>, std::is_nothrow_copy_assignable_v<opt>) << err;
+
+  EXPECT_EQ(std::is_nothrow_move_assignable_v<test_object>, std::is_nothrow_move_assignable_v<opt>) << err;
+
+  constexpr bool to_int_int = std::is_nothrow_constructible_v<test_object, int, int>;
+  constexpr bool opt_int_int = std::is_nothrow_constructible_v<opt, in_place_t, int, int>;
+  EXPECT_EQ(to_int_int, opt_int_int) << err;
+
+  if constexpr (CopyCtor == variant_noexcept::THROWABLE) {
+    EXPECT_FALSE(std::is_nothrow_copy_constructible_v<opt>) << err;
+  }
+  if constexpr (MoveCtor == variant_noexcept::THROWABLE) {
+    EXPECT_FALSE(std::is_nothrow_move_constructible_v<opt>) << err;
+  }
+  if constexpr (CopyAssign == variant_noexcept::THROWABLE) {
+    EXPECT_FALSE(std::is_nothrow_copy_assignable_v<opt>) << err;
+  }
+  if constexpr (MoveAssign == variant_noexcept::THROWABLE) {
+    EXPECT_FALSE(std::is_nothrow_move_assignable_v<opt>) << err;
+  }
+  if constexpr (MoveAssign == variant_noexcept::NOEXCEPT && MoveCtor == variant_noexcept::NOEXCEPT) {
+    EXPECT_TRUE(std::is_nothrow_swappable_v<opt>) << err;
+  }
+  if constexpr (UserCtor == variant_noexcept::NOEXCEPT) {
+    EXPECT_TRUE(opt_int_int) << err;
+  }
+  constexpr bool nothrow_T_constructible = std::is_nothrow_constructible_v<opt, test_object>;
+  if constexpr (MoveCtor == variant_noexcept::NOEXCEPT) {
+    EXPECT_TRUE(nothrow_T_constructible) << err;
+  }
+}
+
+template <variant_noexcept... Vs, typename F>
+void static_for_each(variants_noexcept<Vs...>, F f) {
+  (f.template operator()<Vs>(), ...);
+}
+} // namespace
+
+TEST(traits_test, stress_noexcept) {
+  using all_variants = variants_noexcept<variant_noexcept::NOEXCEPT, variant_noexcept::THROWABLE>;
+
+  static_for_each(all_variants{}, []<variant_noexcept CopyCtor>() {
+    static_for_each(all_variants{}, []<variant_noexcept MoveCtor>() {
+      static_for_each(all_variants{}, []<variant_noexcept CopyAssign>() {
+        static_for_each(all_variants{}, []<variant_noexcept MoveAssign>() {
+          static_for_each(all_variants{}, []<variant_noexcept UserCtor>() {
+            test_variants_noexcept<CopyCtor, MoveCtor, CopyAssign, MoveAssign, UserCtor>();
+          });
+        });
+      });
+    });
+  });
+}
