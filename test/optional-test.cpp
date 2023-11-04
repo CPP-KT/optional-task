@@ -6,21 +6,75 @@
 
 namespace {
 
+struct only_copy_constructible : test_object {
+  using test_object::test_object;
+
+  only_copy_constructible(const only_copy_constructible&) = default;
+  only_copy_constructible& operator=(const only_copy_constructible&) = delete;
+
+  only_copy_constructible(only_copy_constructible&& other) = delete;
+  only_copy_constructible& operator=(only_copy_constructible&&) = delete;
+};
+
+struct only_move_constructible : test_object {
+  using test_object::test_object;
+
+  only_move_constructible(const only_move_constructible&) = delete;
+  only_move_constructible& operator=(const only_move_constructible&) = delete;
+
+  only_move_constructible(only_move_constructible&& other) = default;
+  only_move_constructible& operator=(only_move_constructible&&) = delete;
+};
+
+struct only_copyable : test_object {
+  using test_object::test_object;
+
+  only_copyable(const only_copyable& other) : test_object(other) {
+    ++copy_ctor_calls;
+  }
+
+  only_copyable& operator=(const only_copyable& other) {
+    test_object::operator=(other);
+    ++copy_assign_calls;
+    return *this;
+  }
+
+  only_copyable(only_copyable&& other) = delete;
+  only_copyable& operator=(only_copyable&& other) = delete;
+
+  inline static size_t copy_ctor_calls = 0;
+  inline static size_t copy_assign_calls = 0;
+};
+
 struct only_movable : test_object {
   using test_object::test_object;
+
   only_movable(const only_movable&) = delete;
   only_movable& operator=(const only_movable&) = delete;
 
-  only_movable(only_movable&& other) noexcept : test_object(std::move(other)) {}
+  only_movable(only_movable&& other) : test_object(std::move(other)) {
+    ++move_ctor_calls;
+  }
 
-  only_movable& operator=(only_movable&& other) noexcept {
-    static_cast<test_object&>(*this) = std::move(other);
+  only_movable& operator=(only_movable&& other) {
+    test_object::operator=(std::move(other));
+    ++move_assign_calls;
     return *this;
   }
+
+  inline static size_t move_ctor_calls = 0;
+  inline static size_t move_assign_calls = 0;
 };
 
 class optional_test : public ::testing::Test {
 protected:
+  void SetUp() noexcept override {
+    only_copyable::copy_ctor_calls = 0;
+    only_copyable::copy_assign_calls = 0;
+    only_movable::move_ctor_calls = 0;
+    only_movable::move_ctor_calls = 0;
+  }
+
   test_object::no_new_instances_guard instances_guard;
 };
 
@@ -79,81 +133,106 @@ TEST_F(optional_test, dtor) {
 }
 
 TEST_F(optional_test, copy_ctor) {
-  optional<test_object> a(42);
-  optional<test_object> b = a;
+  optional<only_copy_constructible> a(in_place, 42);
+  optional<only_copy_constructible> b = a;
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
 
 TEST_F(optional_test, copy_ctor_empty) {
-  optional<test_object> a;
-  optional<test_object> b = a;
+  optional<only_copy_constructible> a;
+  optional<only_copy_constructible> b = a;
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
 TEST_F(optional_test, move_ctor) {
-  optional<only_movable> a(42);
-  optional<only_movable> b = std::move(a);
+  optional<only_move_constructible> a(in_place, 42);
+  optional<only_move_constructible> b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
+  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_EQ(42, *a);
 }
 
 TEST_F(optional_test, move_ctor_empty) {
-  optional<test_object> a;
-  optional<test_object> b = std::move(a);
+  optional<only_move_constructible> a;
+  optional<only_move_constructible> b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_FALSE(static_cast<bool>(a));
 }
 
 TEST_F(optional_test, copy_assignment_empty_empty) {
-  optional<test_object> a, b;
+  optional<only_copyable> a, b;
   b = a;
   EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_EQ(0, only_copyable::copy_ctor_calls);
+  EXPECT_EQ(0, only_copyable::copy_assign_calls);
 }
 
 TEST_F(optional_test, copy_assignment_to_empty) {
-  optional<test_object> a(42), b;
+  optional<only_copyable> a(in_place, 42), b;
   b = a;
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
+  EXPECT_EQ(1, only_copyable::copy_ctor_calls);
+  EXPECT_EQ(0, only_copyable::copy_assign_calls);
 }
 
 TEST_F(optional_test, copy_assignment_from_empty) {
-  optional<test_object> a, b(42);
+  optional<only_copyable> a, b(in_place, 42);
   b = a;
   EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_EQ(0, only_copyable::copy_ctor_calls);
+  EXPECT_EQ(0, only_copyable::copy_assign_calls);
 }
 
 TEST_F(optional_test, copy_assignment) {
-  optional<test_object> a(42), b(41);
+  optional<only_copyable> a(in_place, 42), b(in_place, 41);
   b = a;
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
+  EXPECT_EQ(0, only_copyable::copy_ctor_calls);
+  EXPECT_EQ(1, only_copyable::copy_assign_calls);
 }
 
 TEST_F(optional_test, move_assignment_empty_empty) {
   optional<only_movable> a, b;
   b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_EQ(0, only_movable::move_ctor_calls);
+  EXPECT_EQ(0, only_movable::move_assign_calls);
 }
 
 TEST_F(optional_test, move_assignment_to_empty) {
-  optional<only_movable> a(42), b;
+  optional<only_movable> a(in_place, 42), b;
   b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
+  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_EQ(42, *a);
+  EXPECT_EQ(1, only_movable::move_ctor_calls);
+  EXPECT_EQ(0, only_movable::move_assign_calls);
 }
 
 TEST_F(optional_test, move_assignment_from_empty) {
-  optional<only_movable> a, b(42);
+  optional<only_movable> a, b(in_place, 42);
   b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_EQ(0, only_movable::move_ctor_calls);
+  EXPECT_EQ(0, only_movable::move_assign_calls);
 }
 
 TEST_F(optional_test, move_assignment) {
-  optional<only_movable> a(42), b(41);
+  optional<only_movable> a(in_place, 42), b(in_place, 41);
   b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
+  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_EQ(42, *a);
+  EXPECT_EQ(0, only_movable::move_ctor_calls);
+  EXPECT_EQ(1, only_movable::move_assign_calls);
 }
 
 TEST_F(optional_test, nullopt_ctor) {
