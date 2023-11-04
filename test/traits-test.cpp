@@ -212,99 +212,119 @@ template <variant Dtor, variant CopyCtor, variant MoveCtor, variant CopyAssign, 
 void test_variants() {
   using enum variant;
 
-  struct test_object_base : test_object_destructor_base<Dtor> {
-    test_object_base(const test_object_base&)
+  struct test_object : test_object_destructor_base<Dtor> {
+    test_object(const test_object&)
       requires(CopyCtor == TRIVIAL)
     = default;
 
-    test_object_base(const test_object_base&)
+    test_object(const test_object&)
       requires(CopyCtor == DELETED)
     = delete;
 
-    test_object_base(const test_object_base&)
+    test_object(const test_object&)
       requires(CopyCtor == USER_DEFINED)
     {}
 
-    test_object_base(test_object_base&&)
+    test_object(test_object&&)
       requires(MoveCtor == TRIVIAL)
     = default;
 
-    test_object_base(test_object_base&&)
+    test_object(test_object&&)
       requires(MoveCtor == DELETED)
     = delete;
 
-    test_object_base(test_object_base&&)
+    test_object(test_object&&)
       requires(MoveCtor == USER_DEFINED)
     {}
 
-    test_object_base& operator=(const test_object_base&)
+    test_object& operator=(const test_object&)
       requires(CopyAssign == TRIVIAL)
     = default;
 
-    test_object_base& operator=(const test_object_base&)
+    test_object& operator=(const test_object&)
       requires(CopyAssign == DELETED)
     = delete;
 
-    test_object_base& operator=(const test_object_base&)
+    test_object& operator=(const test_object&)
       requires(CopyAssign == USER_DEFINED)
     {
       return *this;
     }
 
-    test_object_base& operator=(test_object_base&&)
+    test_object& operator=(test_object&&)
       requires(MoveAssign == TRIVIAL)
     = default;
 
-    test_object_base& operator=(test_object_base&&)
+    test_object& operator=(test_object&&)
       requires(MoveAssign == DELETED)
     = delete;
 
-    test_object_base& operator=(test_object_base&&)
+    test_object& operator=(test_object&&)
       requires(MoveAssign == USER_DEFINED)
     {
       return *this;
     }
   };
 
-  // inherit so that deleted moves still allow for calling copy ctor/assignment
-  struct test_object : test_object_base {
-    using test_object_base::test_object_base;
-  };
-
   test_variants_error<Dtor, CopyCtor, MoveCtor, CopyAssign, MoveAssign> err;
-  using opt = optional<test_object>;
 
-  EXPECT_EQ(std::is_destructible_v<test_object>, std::is_destructible_v<opt>) << err;
-  EXPECT_EQ(std::is_trivially_destructible_v<test_object>, std::is_trivially_destructible_v<opt>) << err;
+  {
+    using opt = optional<test_object>;
 
-  EXPECT_EQ(std::is_copy_constructible_v<test_object>, std::is_copy_constructible_v<opt>) << err;
-  EXPECT_EQ(std::is_trivially_copy_constructible_v<test_object>, std::is_trivially_copy_constructible_v<opt>) << err;
-
-  EXPECT_EQ(std::is_move_constructible_v<test_object>, std::is_move_constructible_v<opt>) << err;
-  EXPECT_EQ(std::is_trivially_move_constructible_v<test_object>, std::is_trivially_move_constructible_v<opt>) << err;
-
-  if constexpr (CopyCtor == DELETED) {
-    EXPECT_FALSE(std::is_copy_assignable_v<opt>) << err;
-  } else {
-    EXPECT_EQ(std::is_copy_assignable_v<test_object>, std::is_copy_assignable_v<opt>) << err;
+    if constexpr (CopyCtor != DELETED) {
+      EXPECT_TRUE(std::is_copy_constructible_v<opt>) << err;
+    }
+    if constexpr (MoveCtor != DELETED) {
+      EXPECT_TRUE(std::is_move_constructible_v<opt>) << err;
+    }
+    if constexpr (CopyAssign != DELETED && CopyCtor != DELETED) {
+      EXPECT_TRUE(std::is_copy_assignable_v<opt>) << err;
+    }
+    if constexpr (MoveAssign != DELETED && MoveCtor != DELETED) {
+      EXPECT_TRUE(std::is_move_assignable_v<opt>) << err;
+    }
   }
 
-  if constexpr (CopyCtor == TRIVIAL && Dtor == TRIVIAL) {
-    EXPECT_EQ(std::is_trivially_copy_assignable_v<test_object>, std::is_trivially_copy_assignable_v<opt>) << err;
-  } else {
-    EXPECT_FALSE(std::is_trivially_copy_assignable_v<opt>) << err;
-  }
+  {
+    // inherit so that deleted moves still allow for calling copy ctor/assignment
+    struct derived : test_object {
+      using test_object::test_object;
+    };
 
-  if constexpr (MoveCtor == DELETED && CopyCtor == DELETED) {
-    EXPECT_FALSE(std::is_move_assignable_v<opt>) << err;
-  } else {
-    EXPECT_EQ(std::is_move_assignable_v<test_object>, std::is_move_assignable_v<opt>) << err;
-  }
+    using opt = optional<derived>;
 
-  if constexpr ((MoveCtor == TRIVIAL || (MoveCtor == DELETED && CopyCtor == TRIVIAL)) && Dtor == TRIVIAL) {
-    EXPECT_EQ(std::is_trivially_move_assignable_v<test_object>, std::is_trivially_move_assignable_v<opt>) << err;
-  } else {
-    EXPECT_FALSE(std::is_trivially_move_assignable_v<opt>) << err;
+    EXPECT_EQ(std::is_destructible_v<derived>, std::is_destructible_v<opt>) << err;
+    EXPECT_EQ(std::is_trivially_destructible_v<derived>, std::is_trivially_destructible_v<opt>) << err;
+
+    EXPECT_EQ(std::is_copy_constructible_v<derived>, std::is_copy_constructible_v<opt>) << err;
+    EXPECT_EQ(std::is_trivially_copy_constructible_v<derived>, std::is_trivially_copy_constructible_v<opt>) << err;
+
+    EXPECT_EQ(std::is_move_constructible_v<derived>, std::is_move_constructible_v<opt>) << err;
+    EXPECT_EQ(std::is_trivially_move_constructible_v<derived>, std::is_trivially_move_constructible_v<opt>) << err;
+
+    if constexpr (CopyCtor == DELETED) {
+      EXPECT_FALSE(std::is_copy_assignable_v<opt>) << err;
+    } else {
+      EXPECT_EQ(std::is_copy_assignable_v<derived>, std::is_copy_assignable_v<opt>) << err;
+    }
+
+    if constexpr (CopyCtor == TRIVIAL && Dtor == TRIVIAL) {
+      EXPECT_EQ(std::is_trivially_copy_assignable_v<derived>, std::is_trivially_copy_assignable_v<opt>) << err;
+    } else {
+      EXPECT_FALSE(std::is_trivially_copy_assignable_v<opt>) << err;
+    }
+
+    if constexpr (MoveCtor == DELETED && CopyCtor == DELETED) {
+      EXPECT_FALSE(std::is_move_assignable_v<opt>) << err;
+    } else {
+      EXPECT_EQ(std::is_move_assignable_v<derived>, std::is_move_assignable_v<opt>) << err;
+    }
+
+    if constexpr ((MoveCtor == TRIVIAL || (MoveCtor == DELETED && CopyCtor == TRIVIAL)) && Dtor == TRIVIAL) {
+      EXPECT_EQ(std::is_trivially_move_assignable_v<derived>, std::is_trivially_move_assignable_v<opt>) << err;
+    } else {
+      EXPECT_FALSE(std::is_trivially_move_assignable_v<opt>) << err;
+    }
   }
 }
 
