@@ -35,6 +35,19 @@ static_assert(
 
 static_assert(
     [] {
+      struct cvalue_with_nontrivial_dtor : cvalue {
+        using cvalue::cvalue;
+
+        constexpr ~cvalue_with_nontrivial_dtor() {}
+      };
+
+      optional<cvalue_with_nontrivial_dtor> a;
+      return !static_cast<bool>(a);
+    }(),
+    "non-trivial dtor");
+
+static_assert(
+    [] {
       optional<cvalue> a(nullopt);
       return !static_cast<bool>(a);
     }(),
