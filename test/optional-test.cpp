@@ -92,17 +92,20 @@ const in_place_t* get_in_place_ptr() noexcept {
 
 TEST_F(optional_test, default_ctor) {
   optional<test_object> a;
+  EXPECT_FALSE(a.has_value());
   EXPECT_FALSE(static_cast<bool>(a));
 }
 
 TEST_F(optional_test, default_ctor_no_instances) {
   optional<test_object> a;
+  EXPECT_FALSE(a.has_value());
   EXPECT_FALSE(static_cast<bool>(a));
   instances_guard.expect_no_instances();
 }
 
 TEST_F(optional_test, value_ctor) {
   optional<int> a(42);
+  EXPECT_TRUE(a.has_value());
   EXPECT_TRUE(static_cast<bool>(a));
 }
 
@@ -122,51 +125,51 @@ TEST_F(optional_test, member_access) {
 
 TEST_F(optional_test, reset) {
   optional<test_object> a(42);
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
   a.reset();
-  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_FALSE(a.has_value());
   instances_guard.expect_no_instances();
 }
 
 TEST_F(optional_test, dtor) {
   optional<test_object> a(42);
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
   EXPECT_EQ(42, *a);
 }
 
 TEST_F(optional_test, copy_ctor) {
   optional<only_copy_constructible> a(in_place, 42);
   optional<only_copy_constructible> b = a;
-  EXPECT_TRUE(static_cast<bool>(b));
+  EXPECT_TRUE(b.has_value());
   EXPECT_EQ(42, *b);
 }
 
 TEST_F(optional_test, copy_ctor_empty) {
   optional<only_copy_constructible> a;
   optional<only_copy_constructible> b = a;
-  EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_FALSE(b.has_value());
 }
 
 TEST_F(optional_test, move_ctor) {
   optional<only_move_constructible> a(in_place, 42);
   optional<only_move_constructible> b = std::move(a);
-  EXPECT_TRUE(static_cast<bool>(b));
+  EXPECT_TRUE(b.has_value());
   EXPECT_EQ(42, *b);
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
   EXPECT_EQ(42, *a);
 }
 
 TEST_F(optional_test, move_ctor_empty) {
   optional<only_move_constructible> a;
   optional<only_move_constructible> b = std::move(a);
-  EXPECT_FALSE(static_cast<bool>(b));
-  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_FALSE(b.has_value());
+  EXPECT_FALSE(a.has_value());
 }
 
 TEST_F(optional_test, copy_assignment_empty_empty) {
   optional<only_copyable> a, b;
   b = a;
-  EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_FALSE(b.has_value());
   EXPECT_EQ(0, only_copyable::copy_ctor_calls);
   EXPECT_EQ(0, only_copyable::copy_assign_calls);
 }
@@ -174,7 +177,7 @@ TEST_F(optional_test, copy_assignment_empty_empty) {
 TEST_F(optional_test, copy_assignment_to_empty) {
   optional<only_copyable> a(in_place, 42), b;
   b = a;
-  EXPECT_TRUE(static_cast<bool>(b));
+  EXPECT_TRUE(b.has_value());
   EXPECT_EQ(42, *b);
   EXPECT_EQ(1, only_copyable::copy_ctor_calls);
   EXPECT_EQ(0, only_copyable::copy_assign_calls);
@@ -183,7 +186,7 @@ TEST_F(optional_test, copy_assignment_to_empty) {
 TEST_F(optional_test, copy_assignment_from_empty) {
   optional<only_copyable> a, b(in_place, 42);
   b = a;
-  EXPECT_FALSE(static_cast<bool>(b));
+  EXPECT_FALSE(b.has_value());
   EXPECT_EQ(0, only_copyable::copy_ctor_calls);
   EXPECT_EQ(0, only_copyable::copy_assign_calls);
 }
@@ -191,7 +194,7 @@ TEST_F(optional_test, copy_assignment_from_empty) {
 TEST_F(optional_test, copy_assignment) {
   optional<only_copyable> a(in_place, 42), b(in_place, 41);
   b = a;
-  EXPECT_TRUE(static_cast<bool>(b));
+  EXPECT_TRUE(b.has_value());
   EXPECT_EQ(42, *b);
   EXPECT_EQ(0, only_copyable::copy_ctor_calls);
   EXPECT_EQ(1, only_copyable::copy_assign_calls);
@@ -200,8 +203,8 @@ TEST_F(optional_test, copy_assignment) {
 TEST_F(optional_test, move_assignment_empty_empty) {
   optional<only_movable> a, b;
   b = std::move(a);
-  EXPECT_FALSE(static_cast<bool>(b));
-  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_FALSE(b.has_value());
+  EXPECT_FALSE(a.has_value());
   EXPECT_EQ(0, only_movable::move_ctor_calls);
   EXPECT_EQ(0, only_movable::move_assign_calls);
 }
@@ -209,9 +212,9 @@ TEST_F(optional_test, move_assignment_empty_empty) {
 TEST_F(optional_test, move_assignment_to_empty) {
   optional<only_movable> a(in_place, 42), b;
   b = std::move(a);
-  EXPECT_TRUE(static_cast<bool>(b));
+  EXPECT_TRUE(b.has_value());
   EXPECT_EQ(42, *b);
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
   EXPECT_EQ(42, *a);
   EXPECT_EQ(1, only_movable::move_ctor_calls);
   EXPECT_EQ(0, only_movable::move_assign_calls);
@@ -220,8 +223,8 @@ TEST_F(optional_test, move_assignment_to_empty) {
 TEST_F(optional_test, move_assignment_from_empty) {
   optional<only_movable> a, b(in_place, 42);
   b = std::move(a);
-  EXPECT_FALSE(static_cast<bool>(b));
-  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_FALSE(b.has_value());
+  EXPECT_FALSE(a.has_value());
   EXPECT_EQ(0, only_movable::move_ctor_calls);
   EXPECT_EQ(0, only_movable::move_assign_calls);
 }
@@ -229,9 +232,9 @@ TEST_F(optional_test, move_assignment_from_empty) {
 TEST_F(optional_test, move_assignment) {
   optional<only_movable> a(in_place, 42), b(in_place, 41);
   b = std::move(a);
-  EXPECT_TRUE(static_cast<bool>(b));
+  EXPECT_TRUE(b.has_value());
   EXPECT_EQ(42, *b);
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
   EXPECT_EQ(42, *a);
   EXPECT_EQ(0, only_movable::move_ctor_calls);
   EXPECT_EQ(1, only_movable::move_assign_calls);
@@ -239,6 +242,7 @@ TEST_F(optional_test, move_assignment) {
 
 TEST_F(optional_test, nullopt_ctor) {
   optional<test_object> a = nullopt;
+  EXPECT_FALSE(a.has_value());
   EXPECT_FALSE(static_cast<bool>(a));
   instances_guard.expect_no_instances();
 }
@@ -246,6 +250,7 @@ TEST_F(optional_test, nullopt_ctor) {
 TEST_F(optional_test, nullopt_assignment) {
   optional<test_object> a(42);
   a = nullopt;
+  EXPECT_FALSE(a.has_value());
   EXPECT_FALSE(static_cast<bool>(a));
   EXPECT_TRUE(noexcept(a = nullopt));
   instances_guard.expect_no_instances();
@@ -253,6 +258,7 @@ TEST_F(optional_test, nullopt_assignment) {
 
 TEST_F(optional_test, empty_ctor) {
   optional<test_object> a = {};
+  EXPECT_FALSE(a.has_value());
   EXPECT_FALSE(static_cast<bool>(a));
   instances_guard.expect_no_instances();
 }
@@ -260,6 +266,7 @@ TEST_F(optional_test, empty_ctor) {
 TEST_F(optional_test, empty_assignment) {
   optional<test_object> a(42);
   a = {};
+  EXPECT_FALSE(a.has_value());
   EXPECT_FALSE(static_cast<bool>(a));
   instances_guard.expect_no_instances();
 }
@@ -351,13 +358,13 @@ struct non_default_constructor {
 
 TEST_F(optional_test, in_place_ctor) {
   optional<non_default_constructor> a(in_place, 1, 2, 3, std::unique_ptr<int>());
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
 }
 
 TEST_F(optional_test, emplace) {
   optional<non_default_constructor> a;
   a.emplace(1, 2, 3, std::unique_ptr<int>());
-  EXPECT_TRUE(static_cast<bool>(a));
+  EXPECT_TRUE(a.has_value());
 }
 
 namespace {
@@ -382,7 +389,7 @@ TEST_F(optional_test, emplace_throw) {
   optional<throw_in_ctor> a(in_place, 1, 2);
   throw_in_ctor::enable_throw = true;
   EXPECT_THROW(a.emplace(3, 4), throw_in_ctor::exception);
-  EXPECT_FALSE(static_cast<bool>(a));
+  EXPECT_FALSE(a.has_value());
 }
 
 namespace {

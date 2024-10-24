@@ -32,7 +32,7 @@ private:
 static_assert(
     [] {
       optional<cvalue> a;
-      return !static_cast<bool>(a);
+      return !a.has_value();
     }(),
     "default ctor"
 );
@@ -46,7 +46,7 @@ static_assert(
       };
 
       optional<cvalue_with_nontrivial_dtor> a;
-      return !static_cast<bool>(a);
+      return !a.has_value();
     }(),
     "non-trivial dtor"
 );
@@ -54,7 +54,7 @@ static_assert(
 static_assert(
     [] {
       optional<cvalue> a(nullopt);
-      return !static_cast<bool>(a);
+      return !a.has_value();
     }(),
     "nullopt ctor"
 );
@@ -209,7 +209,7 @@ static_assert(
     [] {
       optional<int> a(43);
       a.reset();
-      return !static_cast<bool>(a);
+      return !a.has_value();
     }(),
     "reset"
 );

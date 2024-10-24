@@ -25,6 +25,7 @@ public:
 
   friend constexpr void swap(optional& lhs, optional& rhs);
 
+  constexpr bool has_value() const noexcept;
   constexpr explicit operator bool() const noexcept;
 
   constexpr T& operator*() & noexcept;
