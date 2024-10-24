@@ -29,7 +29,8 @@ struct only_move_constructible : test_object {
 struct only_copyable : test_object {
   using test_object::test_object;
 
-  only_copyable(const only_copyable& other) : test_object(other) {
+  only_copyable(const only_copyable& other)
+      : test_object(other) {
     ++copy_ctor_calls;
   }
 
@@ -52,7 +53,8 @@ struct only_movable : test_object {
   only_movable(const only_movable&) = delete;
   only_movable& operator=(const only_movable&) = delete;
 
-  only_movable(only_movable&& other) : test_object(std::move(other)) {
+  only_movable(only_movable&& other)
+      : test_object(std::move(other)) {
     ++move_ctor_calls;
   }
 
@@ -305,7 +307,8 @@ TEST_F(optional_test, swap_empty_both) {
 namespace {
 
 struct custom_swap {
-  custom_swap(int value) noexcept : value(value) {}
+  custom_swap(int value) noexcept
+      : value(value) {}
 
   friend void swap(custom_swap& lhs, custom_swap& rhs) noexcept {
     std::swap(lhs.value, rhs.value);
@@ -394,7 +397,9 @@ struct comparison_counters {
 };
 
 struct custom_comparison {
-  custom_comparison(int value, comparison_counters* counters) : value(value), counters(counters) {}
+  custom_comparison(int value, comparison_counters* counters)
+      : value(value)
+      , counters(counters) {}
 
   bool operator==(const custom_comparison& other) const {
     ++counters->equal;

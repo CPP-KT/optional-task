@@ -5,11 +5,14 @@
 namespace {
 
 struct cvalue {
-  constexpr cvalue() : value(0) {}
+  constexpr cvalue()
+      : value(0) {}
 
-  constexpr cvalue(int value) : value(value) {}
+  constexpr cvalue(int value)
+      : value(value) {}
 
-  constexpr cvalue(const cvalue& other) : value(other.value) {}
+  constexpr cvalue(const cvalue& other)
+      : value(other.value) {}
 
   constexpr cvalue& operator=(const cvalue& other) {
     value = other.value + 1;
@@ -31,7 +34,8 @@ static_assert(
       optional<cvalue> a;
       return !static_cast<bool>(a);
     }(),
-    "default ctor");
+    "default ctor"
+);
 
 static_assert(
     [] {
@@ -44,91 +48,104 @@ static_assert(
       optional<cvalue_with_nontrivial_dtor> a;
       return !static_cast<bool>(a);
     }(),
-    "non-trivial dtor");
+    "non-trivial dtor"
+);
 
 static_assert(
     [] {
       optional<cvalue> a(nullopt);
       return !static_cast<bool>(a);
     }(),
-    "nullopt ctor");
+    "nullopt ctor"
+);
 
 static_assert(
     [] {
       optional<cvalue> a(42);
       return (*a).get() == 42;
     }(),
-    "value ctor");
+    "value ctor"
+);
 
 static_assert(
     [] {
       optional<cvalue> a(in_place, 42);
       return (*a).get() == 42;
     }(),
-    "in_place ctor");
+    "in_place ctor"
+);
 
 static_assert(
     [] {
       optional<cvalue> a(42);
       return (*std::as_const(a)).get() == 42;
     }(),
-    "const indirection");
+    "const indirection"
+);
 
 static_assert(
     [] {
       optional<cvalue> a(42);
       return a->get() == 42;
     }(),
-    "member access");
+    "member access"
+);
 
 static_assert(
     [] {
       optional<cvalue> a(42);
       return std::as_const(a)->get() == 42;
     }(),
-    "member access const");
+    "member access const"
+);
 
 static_assert(
     [] {
       optional<int> a(42);
       return a == a;
     }(),
-    "equals");
+    "equals"
+);
 
 static_assert(
     [] {
       optional<int> a(42), b(43);
       return a != b;
     }(),
-    "not equals");
+    "not equals"
+);
 
 static_assert(
     [] {
       optional<int> a(42), b(43);
       return a < b;
     }(),
-    "less");
+    "less"
+);
 
 static_assert(
     [] {
       optional<int> a(42), b(43);
       return a <= b;
     }(),
-    "less or equals");
+    "less or equals"
+);
 
 static_assert(
     [] {
       optional<int> a(43), b(42);
       return a > b;
     }(),
-    "greater");
+    "greater"
+);
 
 static_assert(
     [] {
       optional<int> a(43), b(42);
       return a >= b;
     }(),
-    "greater or equals");
+    "greater or equals"
+);
 
 static_assert(
     [] {
@@ -136,7 +153,8 @@ static_assert(
       optional<int> b(a);
       return a == b;
     }(),
-    "copy ctor");
+    "copy ctor"
+);
 
 static_assert(
     [] {
@@ -144,7 +162,8 @@ static_assert(
       optional<int> b(std::move(a));
       return b && *b == 43;
     }(),
-    "move ctor");
+    "move ctor"
+);
 
 static_assert(
     [] {
@@ -153,7 +172,8 @@ static_assert(
       a = b;
       return a == b;
     }(),
-    "copy assign");
+    "copy assign"
+);
 
 static_assert(
     [] {
@@ -162,7 +182,8 @@ static_assert(
       a = std::move(b);
       return *a == 42;
     }(),
-    "move assign");
+    "move assign"
+);
 
 static_assert(
     [] {
@@ -171,7 +192,8 @@ static_assert(
       a = std::move(b);
       return *a == 42;
     }(),
-    "move assign");
+    "move assign"
+);
 
 static_assert(
     [] {
@@ -180,7 +202,8 @@ static_assert(
       swap(a, b);
       return *a == 42 && *b == 43;
     }(),
-    "swap");
+    "swap"
+);
 
 static_assert(
     [] {
@@ -188,7 +211,8 @@ static_assert(
       a.reset();
       return !static_cast<bool>(a);
     }(),
-    "reset");
+    "reset"
+);
 
 static_assert(
     [] {
@@ -196,4 +220,5 @@ static_assert(
       a.emplace(42);
       return *a == 42;
     }(),
-    "emplace");
+    "emplace"
+);

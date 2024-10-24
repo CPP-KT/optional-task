@@ -42,15 +42,18 @@ struct no_move_t {
 };
 
 struct non_trivial_copy_t {
-  explicit non_trivial_copy_t(int x) noexcept : x{x} {}
+  explicit non_trivial_copy_t(int x) noexcept
+      : x{x} {}
 
-  non_trivial_copy_t(const non_trivial_copy_t& other) noexcept : x{other.x + 1} {}
+  non_trivial_copy_t(const non_trivial_copy_t& other) noexcept
+      : x{other.x + 1} {}
 
   int x;
 };
 
 struct non_trivial_copy_assignment_t {
-  explicit non_trivial_copy_assignment_t(int x) noexcept : x{x} {}
+  explicit non_trivial_copy_assignment_t(int x) noexcept
+      : x{x} {}
 
   non_trivial_copy_assignment_t& operator=(const non_trivial_copy_assignment_t& other) {
     if (this != &other) {
@@ -214,53 +217,53 @@ void test_variants() {
 
   struct test_object : test_object_destructor_base<Dtor> {
     test_object(const test_object&)
-      requires(CopyCtor == TRIVIAL)
+      requires (CopyCtor == TRIVIAL)
     = default;
 
     test_object(const test_object&)
-      requires(CopyCtor == DELETED)
+      requires (CopyCtor == DELETED)
     = delete;
 
     test_object(const test_object&)
-      requires(CopyCtor == USER_DEFINED)
+      requires (CopyCtor == USER_DEFINED)
     {}
 
     test_object(test_object&&)
-      requires(MoveCtor == TRIVIAL)
+      requires (MoveCtor == TRIVIAL)
     = default;
 
     test_object(test_object&&)
-      requires(MoveCtor == DELETED)
+      requires (MoveCtor == DELETED)
     = delete;
 
     test_object(test_object&&)
-      requires(MoveCtor == USER_DEFINED)
+      requires (MoveCtor == USER_DEFINED)
     {}
 
     test_object& operator=(const test_object&)
-      requires(CopyAssign == TRIVIAL)
+      requires (CopyAssign == TRIVIAL)
     = default;
 
     test_object& operator=(const test_object&)
-      requires(CopyAssign == DELETED)
+      requires (CopyAssign == DELETED)
     = delete;
 
     test_object& operator=(const test_object&)
-      requires(CopyAssign == USER_DEFINED)
+      requires (CopyAssign == USER_DEFINED)
     {
       return *this;
     }
 
     test_object& operator=(test_object&&)
-      requires(MoveAssign == TRIVIAL)
+      requires (MoveAssign == TRIVIAL)
     = default;
 
     test_object& operator=(test_object&&)
-      requires(MoveAssign == DELETED)
+      requires (MoveAssign == DELETED)
     = delete;
 
     test_object& operator=(test_object&&)
-      requires(MoveAssign == USER_DEFINED)
+      requires (MoveAssign == USER_DEFINED)
     {
       return *this;
     }

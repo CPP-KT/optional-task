@@ -10,7 +10,8 @@ int transcode(int data, const void* ptr) {
 
 } // namespace
 
-test_object::test_object(int data) : data(transcode(data, this)) {
+test_object::test_object(int data)
+    : data(transcode(data, this)) {
   auto p = instances.insert(this);
   EXPECT_TRUE(p.second);
 }
@@ -53,7 +54,8 @@ void test_object::check_this() const {
 
 std::set<const test_object*> test_object::instances;
 
-test_object::no_new_instances_guard::no_new_instances_guard() : old_instances(instances) {}
+test_object::no_new_instances_guard::no_new_instances_guard()
+    : old_instances(instances) {}
 
 test_object::no_new_instances_guard::~no_new_instances_guard() {
   EXPECT_EQ(old_instances, instances);
