@@ -70,3 +70,6 @@ constexpr bool operator>=(const optional<T>& lhs, const optional<T>& rhs);
 
 template <class T>
 constexpr std::compare_three_way_result_t<T> operator<=>(const optional<T>& lhs, const optional<T>& rhs);
+
+template <typename T>
+optional(T) -> optional<T>;
