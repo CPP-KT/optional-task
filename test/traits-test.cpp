@@ -7,55 +7,55 @@
 
 namespace {
 
-struct dummy_t {};
+struct dummy {};
 
-struct no_default_t {
-  no_default_t() = delete;
+struct no_default {
+  no_default() = delete;
 };
 
-struct throwing_default_t {
-  throwing_default_t() {
+struct throwing_default {
+  throwing_default() {
     throw std::exception();
   }
 };
 
-struct throwing_move_operator_t {
-  throwing_move_operator_t() = default;
+struct throwing_move_operator {
+  throwing_move_operator() = default;
 
-  throwing_move_operator_t(throwing_move_operator_t&&) {
+  throwing_move_operator(throwing_move_operator&&) {
     throw std::exception();
   }
 
-  throwing_move_operator_t& operator=(throwing_move_operator_t&&) = default;
+  throwing_move_operator& operator=(throwing_move_operator&&) = default;
 
-  [[maybe_unused]] friend void swap(throwing_move_operator_t&, throwing_move_operator_t&) {
+  [[maybe_unused]] friend void swap(throwing_move_operator&, throwing_move_operator&) {
     throw std::exception();
   }
 };
 
-struct no_copy_t {
-  no_copy_t(const no_copy_t&) = delete;
+struct no_copy {
+  no_copy(const no_copy&) = delete;
 };
 
 struct no_move_t {
   no_move_t(no_move_t&&) = delete;
 };
 
-struct non_trivial_copy_t {
-  explicit non_trivial_copy_t(int x) noexcept
+struct non_trivial_copy {
+  explicit non_trivial_copy(int x) noexcept
       : x{x} {}
 
-  non_trivial_copy_t(const non_trivial_copy_t& other) noexcept
+  non_trivial_copy(const non_trivial_copy& other) noexcept
       : x{other.x + 1} {}
 
   int x;
 };
 
-struct non_trivial_copy_assignment_t {
-  explicit non_trivial_copy_assignment_t(int x) noexcept
+struct non_trivial_copy_assignment {
+  explicit non_trivial_copy_assignment(int x) noexcept
       : x{x} {}
 
-  non_trivial_copy_assignment_t& operator=(const non_trivial_copy_assignment_t& other) {
+  non_trivial_copy_assignment& operator=(const non_trivial_copy_assignment& other) {
     if (this != &other) {
       x = other.x + 5;
     }
@@ -65,104 +65,350 @@ struct non_trivial_copy_assignment_t {
   int x;
 };
 
-struct no_move_assignment_t {
-  no_move_assignment_t& operator=(no_move_assignment_t&&) = delete;
+struct no_move_assignment {
+  no_move_assignment& operator=(no_move_assignment&&) = delete;
 };
 
 struct no_copy_assignment_t {
   no_copy_assignment_t& operator=(const no_copy_assignment_t&) = delete;
 };
 
+struct move_only {
+  move_only(const move_only&) = delete;
+  move_only(move_only&&) = default;
+
+  move_only& operator=(const move_only&) = delete;
+  move_only& operator=(move_only&&) = default;
+};
+
+struct copy_only {
+  copy_only(const copy_only&) = default;
+  copy_only(copy_only&&) = delete;
+
+  copy_only& operator=(const copy_only&) = default;
+  copy_only& operator=(copy_only&&) = delete;
+};
+
+struct copyable {
+  copyable(const copyable&) = default;
+
+  copyable& operator=(const copyable&) & = default;
+};
+
+struct assignable_from_int {
+  explicit assignable_from_int(int) noexcept {}
+
+  assignable_from_int& operator=(int) & noexcept {
+    return *this;
+  }
+};
+
+struct throwing_swappable {};
+
+[[maybe_unused]] void swap(throwing_swappable&, throwing_swappable&) {}
+
+struct non_swappable {};
+
+[[maybe_unused]] void swap(non_swappable&, non_swappable&) = delete;
+
+struct implicitly_constructible_from_any {
+  template <typename T>
+  constexpr implicitly_constructible_from_any(T&&) {}
+};
+
+struct swappable_no_move {
+  swappable_no_move(const swappable_no_move&) = delete;
+  swappable_no_move& operator=(const swappable_no_move&) = delete;
+};
+
+[[maybe_unused]] void swap(swappable_no_move&, swappable_no_move&) noexcept {}
+
+struct swappable_no_move_assignment {
+  swappable_no_move_assignment(const swappable_no_move_assignment&) = delete;
+  swappable_no_move_assignment(swappable_no_move_assignment&&) = default;
+
+  swappable_no_move_assignment& operator=(const swappable_no_move_assignment&) = delete;
+  swappable_no_move_assignment& operator=(swappable_no_move_assignment&&) = delete;
+};
+
+[[maybe_unused]] void swap(swappable_no_move_assignment&, swappable_no_move_assignment&) noexcept {}
+
 } // namespace
 
-const nullopt_t* get_nullopt_ptr() noexcept;
-const in_place_t* get_in_place_ptr() noexcept;
+TEST(traits_test, types) {
+  static_assert(std::is_same_v<optional<int>::value_type, int>);
+  static_assert(std::is_same_v<optional<const std::string>::value_type, const std::string>);
+}
+
+TEST(traits_test, nullopt) {
+  static_assert(std::is_same_v<decltype(nullopt), const nullopt_t>);
+  static_assert(std::is_empty_v<nullopt_t>);
+  static_assert(!std::is_default_constructible_v<nullopt_t>);
+}
 
 TEST(traits_test, nullopt_ptr) {
+  const nullopt_t* get_nullopt_ptr() noexcept;
+
   EXPECT_EQ(&nullopt, get_nullopt_ptr());
 }
 
+TEST(traits_test, in_place) {
+  static_assert(std::is_same_v<decltype(in_place), const in_place_t>);
+  static_assert(std::is_empty_v<in_place_t>);
+  static_assert(std::is_default_constructible_v<in_place_t>);
+}
+
 TEST(traits_test, in_place_ptr) {
+  const in_place_t* get_in_place_ptr() noexcept;
+
   EXPECT_EQ(&in_place, get_in_place_ptr());
 }
 
 TEST(traits_test, destructor) {
-  using optional1 = optional<int>;
-  using optional2 = optional<std::string>;
-  EXPECT_TRUE(std::is_trivially_destructible_v<optional1>);
-  EXPECT_FALSE(std::is_trivially_destructible_v<optional2>);
+  static_assert(std::is_trivially_destructible_v<optional<int>>);
+  static_assert(!std::is_trivially_destructible_v<optional<std::string>>);
 }
 
 TEST(traits_test, default_constructor) {
-  using optional1 = optional<std::vector<int>>;
-  using optional2 = optional<no_default_t>;
-  using optional3 = optional<throwing_default_t>;
-  EXPECT_TRUE(std::is_default_constructible_v<optional1>);
-  EXPECT_TRUE(std::is_default_constructible_v<optional2>);
-  EXPECT_TRUE(std::is_default_constructible_v<optional3>);
+  static_assert(std::is_nothrow_default_constructible_v<optional<std::vector<int>>>);
+  static_assert(std::is_nothrow_default_constructible_v<optional<no_default>>);
+  static_assert(std::is_nothrow_default_constructible_v<optional<throwing_default>>);
+}
+
+TEST(traits_test, nullopt_constructor) {
+  static_assert(std::is_nothrow_constructible_v<optional<std::vector<int>>, nullopt_t>);
+  static_assert(std::is_nothrow_constructible_v<optional<no_default>, nullopt_t>);
+  static_assert(std::is_nothrow_constructible_v<optional<throwing_default>, nullopt_t>);
 }
 
 TEST(traits_test, copy_constructor) {
-  using optional1 = optional<no_copy_t>;
-  using optional2 = optional<std::vector<std::string>>;
-  using optional3 = optional<dummy_t>;
-  using optional4 = optional<non_trivial_copy_t>;
-  EXPECT_FALSE(std::is_copy_constructible_v<optional1>);
-  EXPECT_TRUE(std::is_copy_constructible_v<optional2>);
-  EXPECT_FALSE(std::is_trivially_copy_constructible_v<optional2>);
-  EXPECT_TRUE(std::is_trivially_copy_constructible_v<optional3>);
-  EXPECT_FALSE(std::is_trivially_copy_constructible_v<optional4>);
+  static_assert(!std::is_copy_constructible_v<optional<no_copy>>);
+  static_assert(std::is_copy_constructible_v<optional<int>>);
+  static_assert(std::is_nothrow_copy_constructible_v<optional<int>>);
+  static_assert(std::is_copy_constructible_v<optional<std::vector<std::string>>>);
+  static_assert(!std::is_nothrow_copy_constructible_v<optional<std::vector<std::string>>>);
+  static_assert(!std::is_trivially_copy_constructible_v<optional<std::vector<std::string>>>);
+  static_assert(std::is_trivially_copy_constructible_v<optional<dummy>>);
+  static_assert(!std::is_trivially_copy_constructible_v<optional<non_trivial_copy>>);
+  static_assert(std::is_trivially_copy_constructible_v<optional<copy_only>>);
 }
 
 TEST(traits_test, move_constructor) {
-  using optional1 = optional<no_move_t>;
-  using optional2 = optional<std::string>;
-  using optional3 = optional<dummy_t>;
-  using optional4 = optional<throwing_move_operator_t>;
-  EXPECT_FALSE(std::is_move_constructible_v<optional1>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional2>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional3>);
-  EXPECT_FALSE(std::is_trivially_move_constructible_v<optional2>);
-  EXPECT_TRUE(std::is_trivially_move_constructible_v<optional3>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional4>);
+  static_assert(!std::is_move_constructible_v<optional<no_move_t>>);
+  static_assert(std::is_move_constructible_v<optional<std::string>>);
+  static_assert(std::is_nothrow_move_constructible_v<optional<std::string>>);
+  static_assert(!std::is_trivially_move_constructible_v<optional<std::string>>);
+  static_assert(std::is_move_constructible_v<optional<dummy>>);
+  static_assert(std::is_trivially_move_constructible_v<optional<dummy>>);
+  static_assert(std::is_move_constructible_v<optional<throwing_move_operator>>);
+  static_assert(std::is_trivially_move_constructible_v<optional<move_only>>);
 }
 
 TEST(traits_test, copy_assignment) {
-  using optional1 = optional<no_copy_t>;
-  using optional2 = optional<no_copy_assignment_t>;
-  using optional3 = optional<non_trivial_copy_assignment_t>;
-  using optional4 = optional<non_trivial_copy_t>;
-  using optional5 = optional<dummy_t>;
-  using optional6 = optional<no_copy_t>;
-  EXPECT_FALSE(std::is_copy_assignable_v<optional1>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional2>);
-  EXPECT_TRUE(std::is_copy_assignable_v<optional3>);
-  EXPECT_TRUE(std::is_copy_assignable_v<optional4>);
-  EXPECT_TRUE(std::is_copy_assignable_v<optional5>);
-  EXPECT_FALSE(std::is_trivially_copy_assignable_v<optional3>);
-  EXPECT_FALSE(std::is_trivially_copy_assignable_v<optional4>);
-  EXPECT_TRUE(std::is_trivially_copy_assignable_v<optional5>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional6>);
+  static_assert(!std::is_copy_assignable_v<optional<no_copy>>);
+  static_assert(!std::is_copy_assignable_v<optional<no_copy_assignment_t>>);
+  static_assert(std::is_copy_assignable_v<optional<non_trivial_copy_assignment>>);
+  static_assert(std::is_copy_assignable_v<optional<non_trivial_copy>>);
+  static_assert(std::is_copy_assignable_v<optional<dummy>>);
+  static_assert(std::is_nothrow_copy_assignable_v<optional<dummy>>);
+  static_assert(std::is_copy_assignable_v<optional<std::string>>);
+  static_assert(!std::is_nothrow_copy_assignable_v<optional<std::string>>);
+  static_assert(!std::is_trivially_copy_assignable_v<optional<non_trivial_copy_assignment>>);
+  static_assert(!std::is_trivially_copy_assignable_v<optional<non_trivial_copy>>);
+  static_assert(std::is_trivially_copy_assignable_v<optional<dummy>>);
+  static_assert(!std::is_copy_assignable_v<optional<no_copy>>);
 }
 
 TEST(traits_test, move_assignment) {
-  using optional1 = optional<no_move_t>;
-  using optional2 = optional<no_move_assignment_t>;
-  using optional3 = optional<std::vector<double>>;
-  using optional4 = optional<std::string>;
-  using optional5 = optional<dummy_t>;
-  using optional6 = optional<throwing_move_operator_t>;
-  using optional7 = optional<no_move_t>;
-  EXPECT_FALSE(std::is_move_assignable_v<optional1>);
-  EXPECT_FALSE(std::is_move_assignable_v<optional2>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional3>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional4>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional5>);
-  EXPECT_FALSE(std::is_trivially_move_assignable_v<optional3>);
-  EXPECT_FALSE(std::is_trivially_move_assignable_v<optional4>);
-  EXPECT_TRUE(std::is_trivially_move_assignable_v<optional5>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional6>);
-  EXPECT_FALSE(std::is_move_assignable_v<optional7>);
+  static_assert(!std::is_move_assignable_v<optional<no_move_t>>);
+  static_assert(!std::is_move_assignable_v<optional<no_move_assignment>>);
+  static_assert(std::is_move_assignable_v<optional<std::vector<double>>>);
+  static_assert(std::is_move_assignable_v<optional<std::string>>);
+  static_assert(std::is_nothrow_move_assignable_v<optional<std::string>>);
+  static_assert(std::is_move_assignable_v<optional<dummy>>);
+  static_assert(std::is_nothrow_move_assignable_v<optional<dummy>>);
+  static_assert(!std::is_trivially_move_assignable_v<optional<std::vector<double>>>);
+  static_assert(!std::is_trivially_move_assignable_v<optional<std::string>>);
+  static_assert(std::is_trivially_move_assignable_v<optional<dummy>>);
+  static_assert(std::is_move_assignable_v<optional<throwing_move_operator>>);
+  static_assert(!std::is_move_assignable_v<optional<no_move_t>>);
+}
+
+TEST(traits_test, swap) {
+  static_assert(std::is_nothrow_swappable_v<optional<dummy>>);
+  static_assert(std::is_nothrow_swappable_v<optional<std::string>>);
+  static_assert(std::is_nothrow_swappable_v<optional<move_only>>);
+  static_assert(std::is_nothrow_swappable_v<optional<copyable>>);
+  static_assert(std::is_nothrow_swappable_v<optional<swappable_no_move_assignment>>);
+
+  static_assert(std::is_swappable_v<optional<throwing_swappable>>);
+  static_assert(!std::is_nothrow_swappable_v<optional<throwing_swappable>>);
+
+  // See https://wg21.link/LWG2766
+  static_assert(!std::is_swappable_v<optional<non_swappable>>);
+  static_assert(!std::is_swappable_v<optional<copy_only>>);
+  static_assert(!std::is_swappable_v<optional<no_move_t>>);
+  static_assert(!std::is_swappable_v<optional<swappable_no_move>>);
+}
+
+TEST(traits_test, value_constructor) {
+  static_assert(std::is_constructible_v<optional<int>, int>);
+  static_assert(std::is_convertible_v<int, optional<int>>);
+
+  static_assert(std::is_constructible_v<optional<int>, long>);
+  static_assert(std::is_convertible_v<long, optional<int>>);
+
+  static_assert(std::is_constructible_v<optional<const int>, long>);
+  static_assert(std::is_convertible_v<long, optional<const int>>);
+
+  static_assert(std::is_constructible_v<optional<std::string>, const char*>);
+  static_assert(std::is_convertible_v<const char*, optional<std::string>>);
+
+  static_assert(std::is_constructible_v<optional<std::string>, std::string_view>);
+  static_assert(!std::is_convertible_v<std::string_view, optional<std::string>>);
+
+  static_assert(!std::is_constructible_v<optional<std::string>, int>);
+
+  using opt = optional<implicitly_constructible_from_any>;
+  static_assert(!std::is_convertible_v<in_place_t, opt>);
+  static_assert(!std::is_convertible_v<in_place_t&, opt>);
+  static_assert(!std::is_convertible_v<const in_place_t&, opt>);
+  static_assert(!std::is_convertible_v<in_place_t&&, opt>);
+  static_assert(!std::is_convertible_v<const in_place_t&&, opt>);
+}
+
+TEST(traits_test, value_assignment) {
+  static_assert(std::is_nothrow_assignable_v<optional<int>&, int>);
+  static_assert(!std::is_assignable_v<const optional<int>&, int>);
+
+  static_assert(std::is_nothrow_assignable_v<optional<int>&, long>);
+  static_assert(!std::is_assignable_v<const optional<int>&, long>);
+
+  static_assert(!std::is_nothrow_assignable_v<optional<const int>&, long>);
+  static_assert(!std::is_assignable_v<const optional<const int>&, long>);
+
+  static_assert(std::is_assignable_v<optional<std::string>&, const char*>);
+  static_assert(!std::is_nothrow_assignable_v<optional<std::string>&, const char*>);
+  static_assert(!std::is_assignable_v<const optional<std::string>&, const char*>);
+
+  static_assert(std::is_assignable_v<optional<std::string>&, std::string_view>);
+  static_assert(!std::is_nothrow_assignable_v<optional<std::string>&, std::string_view>);
+  static_assert(!std::is_assignable_v<const optional<std::string>&, std::string_view>);
+
+  static_assert(!std::is_assignable_v<optional<std::string>&, int>);
+  static_assert(!std::is_assignable_v<const optional<std::string>&, int>);
+
+  static_assert(std::is_nothrow_assignable_v<optional<assignable_from_int>&, int>);
+  static_assert(!std::is_assignable_v<const optional<assignable_from_int>&, int>);
+}
+
+namespace {
+
+template <bool B>
+struct conditionally_noexcept_1 {
+  conditionally_noexcept_1() noexcept(B);
+  conditionally_noexcept_1(const conditionally_noexcept_1&) noexcept(B);
+
+  conditionally_noexcept_1(int) noexcept(B);
+
+  conditionally_noexcept_1(const conditionally_noexcept_1<!B>&) noexcept(B);
+
+  conditionally_noexcept_1& operator=(const conditionally_noexcept_1&) noexcept(false);
+};
+
+template <bool B>
+struct conditionally_noexcept_2 {
+  conditionally_noexcept_2() noexcept(B);
+
+  conditionally_noexcept_2(const conditionally_noexcept_2&) noexcept(B);
+  conditionally_noexcept_2& operator=(const conditionally_noexcept_2&) noexcept(B);
+
+  conditionally_noexcept_2(int) noexcept(B);
+  conditionally_noexcept_2& operator=(int) noexcept(false);
+
+  conditionally_noexcept_2(void*) noexcept(true);
+  conditionally_noexcept_2& operator=(void*) noexcept(B);
+
+  conditionally_noexcept_2(const conditionally_noexcept_2<!B>&) noexcept(B);
+  conditionally_noexcept_2& operator=(const conditionally_noexcept_2<!B>&) noexcept(B);
+};
+
+} // namespace
+
+TEST(traits_test, noexcept_constructor) {
+  using X = conditionally_noexcept_1<true>;
+  using Y = conditionally_noexcept_1<false>;
+  using OX = optional<X>;
+  using OY = optional<Y>;
+
+  static_assert(std::is_nothrow_constructible_v<OX>);
+  static_assert(std::is_nothrow_constructible_v<OX, nullopt_t>);
+  static_assert(std::is_nothrow_constructible_v<OX, const X&>);
+  static_assert(std::is_nothrow_constructible_v<OX, X>);
+  static_assert(std::is_nothrow_constructible_v<OX, in_place_t, short>);
+  static_assert(std::is_nothrow_constructible_v<OX, const Y&>);
+  static_assert(std::is_nothrow_constructible_v<OX, Y>);
+
+  static_assert(std::is_nothrow_constructible_v<OY>);
+  static_assert(std::is_nothrow_constructible_v<OY, nullopt_t>);
+  static_assert(!std::is_nothrow_constructible_v<OY, const Y&>);
+  static_assert(!std::is_nothrow_constructible_v<OY, Y>);
+  static_assert(!std::is_nothrow_constructible_v<OY, in_place_t, short>);
+  static_assert(!std::is_nothrow_constructible_v<OY, const X&>);
+  static_assert(!std::is_nothrow_constructible_v<OY, X>);
+}
+
+TEST(traits_test, noexcept_assignment) {
+  using X = conditionally_noexcept_2<true>;
+  using Y = conditionally_noexcept_2<false>;
+  using OX = optional<X>;
+  using OY = optional<Y>;
+
+  static_assert(std::is_nothrow_assignable_v<OX, nullopt_t>);
+  static_assert(std::is_nothrow_assignable_v<OX, const X&>);
+  static_assert(std::is_nothrow_assignable_v<OX, X>);
+  static_assert(!std::is_nothrow_assignable_v<OX, int>);
+  static_assert(std::is_nothrow_assignable_v<OX, void*>);
+  static_assert(std::is_nothrow_assignable_v<OX, const Y&>);
+  static_assert(std::is_nothrow_assignable_v<OX, Y>);
+
+  static_assert(std::is_nothrow_assignable_v<OY, nullopt_t>);
+  static_assert(!std::is_nothrow_assignable_v<OY, const Y&>);
+  static_assert(!std::is_nothrow_assignable_v<OY, Y>);
+  static_assert(!std::is_nothrow_assignable_v<OY, int>);
+  static_assert(!std::is_nothrow_assignable_v<OY, void*>);
+  static_assert(!std::is_nothrow_assignable_v<OY, const X&>);
+  static_assert(!std::is_nothrow_assignable_v<OY, X>);
+
+  static_assert(noexcept(std::declval<OX&>().emplace()));
+  static_assert(noexcept(std::declval<OX&>().emplace(std::declval<X&>())));
+  static_assert(noexcept(std::declval<OX&>().emplace(1)));
+  static_assert(noexcept(std::declval<OX&>().emplace(nullptr)));
+  static_assert(noexcept(std::declval<OX&>().emplace(std::declval<Y&>())));
+
+  static_assert(!noexcept(std::declval<OY&>().emplace()));
+  static_assert(!noexcept(std::declval<OY&>().emplace(std::declval<Y&>())));
+  static_assert(!noexcept(std::declval<OY&>().emplace(1)));
+  static_assert(noexcept(std::declval<OY&>().emplace(nullptr)));
+  static_assert(!noexcept(std::declval<OY&>().emplace(std::declval<X&>())));
+}
+
+TEST(traits_test, lwg2762) {
+  struct S {
+    void can_throw();
+    void cannot_throw() noexcept;
+  };
+
+  static_assert(!noexcept(std::declval<optional<S>&>()->can_throw()));
+  static_assert(noexcept(std::declval<optional<S>&>()->cannot_throw()));
+
+  static_assert(noexcept(std::declval<optional<S>&>().operator->()));
+  static_assert(noexcept(std::declval<optional<int>&>().operator->()));
+
+  static_assert(noexcept(*std::declval<optional<int>&>()));
+  static_assert(noexcept(*std::declval<const optional<int>&>()));
+  static_assert(noexcept(*std::declval<optional<int>&&>()));
+  static_assert(noexcept(*std::declval<const optional<int>&&>()));
 }
 
 namespace {
@@ -171,19 +417,26 @@ enum class variant {
   TRIVIAL,
   DELETED,
   USER_DEFINED,
+  USER_DEFINED_NOEXCEPT,
 };
+
+constexpr bool is_variant_noexcept(variant v) noexcept {
+  return v == variant::USER_DEFINED_NOEXCEPT || v == variant::TRIVIAL;
+}
 
 template <variant...>
 struct variants {};
 
 template <variant V>
-consteval std::string_view to_str() {
+consteval std::string_view to_str() noexcept {
   if constexpr (V == variant::TRIVIAL) {
     return "trivial";
   } else if constexpr (V == variant::DELETED) {
     return "deleted";
   } else if constexpr (V == variant::USER_DEFINED) {
     return "user-defined";
+  } else if constexpr (V == variant::USER_DEFINED_NOEXCEPT) {
+    return "user-defined (noexcept)";
   }
 }
 
@@ -207,8 +460,8 @@ template <>
 struct test_object_destructor_base<variant::TRIVIAL> {};
 
 template <>
-struct test_object_destructor_base<variant::USER_DEFINED> {
-  ~test_object_destructor_base() {}
+struct test_object_destructor_base<variant::USER_DEFINED_NOEXCEPT> {
+  ~test_object_destructor_base() noexcept {}
 };
 
 template <variant Dtor, variant CopyCtor, variant MoveCtor, variant CopyAssign, variant MoveAssign>
@@ -228,6 +481,10 @@ void test_variants() {
       requires (CopyCtor == USER_DEFINED)
     {}
 
+    test_object(const test_object&) noexcept
+      requires (CopyCtor == USER_DEFINED_NOEXCEPT)
+    {}
+
     test_object(test_object&&)
       requires (MoveCtor == TRIVIAL)
     = default;
@@ -238,6 +495,10 @@ void test_variants() {
 
     test_object(test_object&&)
       requires (MoveCtor == USER_DEFINED)
+    {}
+
+    test_object(test_object&&) noexcept
+      requires (MoveCtor == USER_DEFINED_NOEXCEPT)
     {}
 
     test_object& operator=(const test_object&)
@@ -254,6 +515,12 @@ void test_variants() {
       return *this;
     }
 
+    test_object& operator=(const test_object&) noexcept
+      requires (CopyAssign == USER_DEFINED_NOEXCEPT)
+    {
+      return *this;
+    }
+
     test_object& operator=(test_object&&)
       requires (MoveAssign == TRIVIAL)
     = default;
@@ -264,6 +531,12 @@ void test_variants() {
 
     test_object& operator=(test_object&&)
       requires (MoveAssign == USER_DEFINED)
+    {
+      return *this;
+    }
+
+    test_object& operator=(test_object&&) noexcept
+      requires (MoveAssign == USER_DEFINED_NOEXCEPT)
     {
       return *this;
     }
@@ -297,18 +570,27 @@ void test_variants() {
     using opt = optional<derived>;
 
     EXPECT_EQ(std::is_destructible_v<derived>, std::is_destructible_v<opt>) << err;
+    EXPECT_EQ(std::is_nothrow_destructible_v<derived>, std::is_nothrow_destructible_v<opt>) << err;
     EXPECT_EQ(std::is_trivially_destructible_v<derived>, std::is_trivially_destructible_v<opt>) << err;
 
     EXPECT_EQ(std::is_copy_constructible_v<derived>, std::is_copy_constructible_v<opt>) << err;
+    EXPECT_EQ(std::is_nothrow_copy_constructible_v<derived>, std::is_nothrow_copy_constructible_v<opt>) << err;
     EXPECT_EQ(std::is_trivially_copy_constructible_v<derived>, std::is_trivially_copy_constructible_v<opt>) << err;
 
     EXPECT_EQ(std::is_move_constructible_v<derived>, std::is_move_constructible_v<opt>) << err;
+    EXPECT_EQ(std::is_nothrow_move_constructible_v<derived>, std::is_nothrow_move_constructible_v<opt>) << err;
     EXPECT_EQ(std::is_trivially_move_constructible_v<derived>, std::is_trivially_move_constructible_v<opt>) << err;
 
     if constexpr (CopyCtor == DELETED) {
       EXPECT_FALSE(std::is_copy_assignable_v<opt>) << err;
     } else {
       EXPECT_EQ(std::is_copy_assignable_v<derived>, std::is_copy_assignable_v<opt>) << err;
+    }
+
+    if constexpr (is_variant_noexcept(CopyCtor)) {
+      EXPECT_EQ(std::is_nothrow_copy_assignable_v<derived>, std::is_nothrow_copy_assignable_v<opt>) << err;
+    } else {
+      EXPECT_FALSE(std::is_nothrow_copy_assignable_v<opt>) << err;
     }
 
     if constexpr (CopyCtor == TRIVIAL && Dtor == TRIVIAL) {
@@ -321,6 +603,12 @@ void test_variants() {
       EXPECT_FALSE(std::is_move_assignable_v<opt>) << err;
     } else {
       EXPECT_EQ(std::is_move_assignable_v<derived>, std::is_move_assignable_v<opt>) << err;
+    }
+
+    if constexpr (is_variant_noexcept(MoveCtor) || (MoveCtor == DELETED && is_variant_noexcept(CopyCtor))) {
+      EXPECT_EQ(std::is_nothrow_move_assignable_v<derived>, std::is_nothrow_move_assignable_v<opt>) << err;
+    } else {
+      EXPECT_FALSE(std::is_nothrow_move_assignable_v<opt>) << err;
     }
 
     if constexpr ((MoveCtor == TRIVIAL || (MoveCtor == DELETED && CopyCtor == TRIVIAL)) && Dtor == TRIVIAL) {
@@ -338,9 +626,10 @@ void static_for_each(variants<Vs...>, F f) {
 
 } // namespace
 
-TEST(traits_test, stress) {
-  using dtor_variants = variants<variant::TRIVIAL, variant::USER_DEFINED>;
-  using all_variants = variants<variant::TRIVIAL, variant::DELETED, variant::USER_DEFINED>;
+TEST(traits_test, all_variants) {
+  using dtor_variants = variants<variant::TRIVIAL, variant::USER_DEFINED_NOEXCEPT>;
+  using all_variants =
+      variants<variant::TRIVIAL, variant::DELETED, variant::USER_DEFINED, variant::USER_DEFINED_NOEXCEPT>;
 
   static_for_each(dtor_variants{}, []<variant Dtor>() {
     static_for_each(all_variants{}, []<variant CopyCtor>() {
