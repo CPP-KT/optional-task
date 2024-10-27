@@ -358,9 +358,10 @@ TEST_F(optional_test, value_assignment) {
   EXPECT_TRUE(a.has_value());
   EXPECT_EQ(*a, 55);
 
-  a = 3.14;
+  short s = 1337;
+  a = s;
   EXPECT_TRUE(a.has_value());
-  EXPECT_EQ(*a, 3);
+  EXPECT_EQ(*a, 1337);
 }
 
 TEST_F(optional_test, swap_non_empty) {
