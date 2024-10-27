@@ -45,7 +45,7 @@ public:
   constexpr const T* operator->() const noexcept;
 
   template <typename... Args>
-  constexpr void emplace(Args&&... args);
+  constexpr T& emplace(Args&&... args);
 
   constexpr void reset() noexcept;
 };
