@@ -9,6 +9,8 @@ struct in_place_t;
 template <typename T>
 class optional {
 public:
+  using value_type = T;
+
   constexpr optional() noexcept;
   constexpr optional(nullopt_t) noexcept;
 
