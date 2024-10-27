@@ -20,12 +20,16 @@ public:
   constexpr optional& operator=(const optional&);
   constexpr optional& operator=(optional&&);
 
-  constexpr optional(T value);
+  template <typename U = T>
+  constexpr optional(U&& value);
 
   template <typename... Args>
   explicit constexpr optional(in_place_t, Args&&... args);
 
   constexpr optional& operator=(nullopt_t) noexcept;
+
+  template <typename U = T>
+  constexpr optional& operator=(U&& value);
 
   friend constexpr void swap(optional& lhs, optional& rhs);
 
