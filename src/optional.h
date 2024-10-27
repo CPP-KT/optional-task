@@ -1,5 +1,7 @@
 #pragma once
 
+#include <compare>
+
 struct nullopt_t;
 
 struct in_place_t;
@@ -43,19 +45,22 @@ public:
 };
 
 template <typename T>
-constexpr bool operator==(const optional<T>& a, const optional<T>& b);
+constexpr bool operator==(const optional<T>& lhs, const optional<T>& rhs);
 
 template <typename T>
-constexpr bool operator!=(const optional<T>& a, const optional<T>& b);
+constexpr bool operator!=(const optional<T>& lhs, const optional<T>& rhs);
 
 template <typename T>
-constexpr bool operator<(const optional<T>& a, const optional<T>& b);
+constexpr bool operator<(const optional<T>& lhs, const optional<T>& rhs);
 
 template <typename T>
-constexpr bool operator<=(const optional<T>& a, const optional<T>& b);
+constexpr bool operator<=(const optional<T>& lhs, const optional<T>& rhs);
 
 template <typename T>
-constexpr bool operator>(const optional<T>& a, const optional<T>& b);
+constexpr bool operator>(const optional<T>& lhs, const optional<T>& rhs);
 
 template <typename T>
-constexpr bool operator>=(const optional<T>& a, const optional<T>& b);
+constexpr bool operator>=(const optional<T>& lhs, const optional<T>& rhs);
+
+template <class T>
+constexpr std::compare_three_way_result_t<T> operator<=>(const optional<T>& lhs, const optional<T>& rhs);
