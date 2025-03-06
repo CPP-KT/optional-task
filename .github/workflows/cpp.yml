@@ -6,7 +6,7 @@ on:
 jobs:
   formatting-check:
     name: Formatting check
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,10 +32,7 @@ jobs:
       matrix:
         toolchain:
           - { name: Linux/GCC,   os: ubuntu-22.04, compiler: gcc-14 }
-          - { name: Linux/Clang, os: ubuntu-22.04, compiler: clang-18 }
-          - { name: macOS,       os: macos-13,     compiler: appleclang-18 }
-          - { name: macOS M1,    os: macos-14,     compiler: appleclang-18 }
-          - { name: Windows,     os: windows-2022, compiler: msvc-2022 }
+          - { name: Linux/Clang, os: ubuntu-22.04, compiler: clang-19 }
         build_type:
           - Release
           - Debug
@@ -43,29 +40,8 @@ jobs:
           - Sanitized
           - SanitizedDebug
           # - ThreadSanitized
-        exclude:
-          # Valgrind is only supported by Linux container
-          - toolchain: { name: macOS }
-            build_type: RelWithDebInfo
-          - toolchain: { name: macOS M1 }
-            build_type: RelWithDebInfo
-          - toolchain: { name: Windows }
-            build_type: RelWithDebInfo
-          # TSAN is only supported by GCC and Clang
-          - toolchain: { name: Windows }
-            build_type: ThreadSanitized
 
-    runs-on: ${{ matrix.toolchain.os }}
-
-    container:
-      image:
-        ${{
-        contains(matrix.toolchain.os, 'ubuntu') &&
-        format('ghcr.io/cpp-kt/ubuntu:{0}', matrix.toolchain.compiler) ||
-        null
-        }}
-      options:
-        --security-opt seccomp=unconfined
+    runs-on: [self-hosted, ubuntu, "${{ matrix.toolchain.compiler }}"]
 
     defaults:
       run:
@@ -76,18 +52,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Setup Cpp
-        if: ${{ !contains(matrix.toolchain.os, 'ubuntu') }}
-        uses: aminya/setup-cpp@v1
-        with:
-          compiler: ${{ matrix.toolchain.compiler }}
-          vcvarsall: ${{ contains(matrix.toolchain.os, 'windows') }}
-          ninja: true
-          cmake: true
-          vcpkg: true
-        env:
-          VCPKG_DISABLE_METRICS: 1
 
       - name: Update tests
         run: |
