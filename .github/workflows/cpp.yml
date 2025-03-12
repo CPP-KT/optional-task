@@ -41,7 +41,7 @@ jobs:
           - SanitizedDebug
           # - ThreadSanitized
 
-    runs-on: [self-hosted, ubuntu, "${{ matrix.toolchain.compiler }}"]
+    runs-on: [self-hosted, ubuntu, "${{ matrix.toolchain.compiler }}", base]
 
     defaults:
       run:
